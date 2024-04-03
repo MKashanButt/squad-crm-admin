@@ -2,24 +2,21 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\PayableResource\Pages;
-use App\Filament\Resources\LeadsResource\Pages as LeadPages;
-use App\Filament\Resources\PayableResource\RelationManagers;
-use App\Models\Payable;
+use App\Filament\Resources\PaidLeadsResource\Pages;
+use App\Filament\Resources\PaidLeadsResource\RelationManagers;
+use App\Models\PaidLeads;
 use Filament\Forms;
-use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class PayableResource extends Resource
+class PaidLeadsResource extends Resource
 {
-    protected static ?string $model = Payable::class;
+    protected static ?string $model = PaidLeads::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -27,6 +24,24 @@ class PayableResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\Select::make('status')
+                    ->options([
+                        'Denied' => 'Denied',
+                        'Error' => 'Error',
+                        'Payable' => 'Payable',
+                        'Approved' => 'Approved',
+                        'Wrong Doc' => 'Wrong Doc',
+                        'Paid' => 'Paid',
+                        'Awaiting' => 'Awaiting'
+                    ])
+                    ->required(),
+                Forms\Components\Select::make('transfer_status')
+                    ->options([
+                        'Transferred' => 'Transferred',
+                        'Not transferred' => 'Not transferred',
+                        'Awaiting' => 'Awaiting'
+                    ])
+                    ->required(),
                 Forms\Components\Select::make('center_code_id')
                     ->relationship('centerCode', 'code')
                     ->searchable()
@@ -100,9 +115,6 @@ class PayableResource extends Resource
                 Forms\Components\Textarea::make('comments')
                     ->required()
                     ->columnSpanFull(),
-                Forms\Components\Select::make('users_id')
-                    ->relationship('users', 'name')
-                    ->required(),
             ]);
     }
 
@@ -110,15 +122,17 @@ class PayableResource extends Resource
     {
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->where('status', 'payable')
+                $query->where('status', 'Paid')
                     ->orderBy('id', 'desc');
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->date()
-                    ->sortable()
-                    ->toggleable(isToggledHiddenByDefault: false),
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')
+                    ->badge('status')
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('transfer_status')
                     ->badge('status')
                     ->searchable(),
                 Tables\Columns\TextColumn::make('centerCode.code')
@@ -183,9 +197,9 @@ class PayableResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListPayables::route('/'),
-            'create' => LeadPages\CreateLeads::route('/create'),
-            'edit' => LeadPages\EditLeads::route('/{record}/edit'),
+            'index' => Pages\ListPaidLeads::route('/'),
+            'create' => Pages\CreatePaidLeads::route('/create'),
+            'edit' => Pages\EditPaidLeads::route('/{record}/edit'),
         ];
     }
 }

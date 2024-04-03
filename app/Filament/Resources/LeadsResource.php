@@ -15,6 +15,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Laravel\Prompts\SearchPrompt;
 
 class LeadsResource extends Resource
 {
@@ -126,10 +127,12 @@ class LeadsResource extends Resource
             ->modifyQueryUsing(function (Builder $query) {
                 $query->where('status', '!=', 'payable')
                     ->orderBy('id', 'desc');
+                $query->where('status', '!=', 'paid')
+                    ->orderBy('id', 'desc');
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
-                    ->dateTime()
+                    ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
@@ -188,6 +191,10 @@ class LeadsResource extends Resource
                         'wrong doc' => 'Wrong doc',
                         'paid' => 'Paid',
                     ]),
+                SelectFilter::make('center_code_id')
+                    ->relationship('centerCode', 'code')
+                    ->searchable()
+                    ->preload()
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
