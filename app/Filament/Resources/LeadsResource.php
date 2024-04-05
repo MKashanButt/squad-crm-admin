@@ -16,6 +16,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Laravel\Prompts\SearchPrompt;
+use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class LeadsResource extends Resource
 {
@@ -133,52 +134,73 @@ class LeadsResource extends Resource
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->date()
+                    ->copyable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('transfer_status')
                     ->badge('status')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('centerCode.code')
                     ->numeric()
+                    ->copyable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('insurance.insurance')
                     ->numeric()
+                    ->copyable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('products.products')
                     ->numeric()
+                    ->copyable()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('patient_phone')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('secondary_phone')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('first_name')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('last_name')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('dob')
+                    ->copyable()
                     ->date()
                     ->sortable(),
                 Tables\Columns\TextColumn::make('medicare_id')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('city')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('state')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('zip')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_name')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('facility_name')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('patient_last_visit')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_phone')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_fax')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_npi')
+                    ->copyable()
                     ->searchable()
             ])
             ->filters([
@@ -203,6 +225,7 @@ class LeadsResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
                 ]),
+                ExportBulkAction::make()
             ]);
     }
 

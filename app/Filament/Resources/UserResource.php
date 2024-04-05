@@ -46,13 +46,16 @@ class UserResource extends Resource
             })
             ->columns([
                 Tables\Columns\TextColumn::make('name')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email')
+                    ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('email_verified_at')
                     ->dateTime()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('bank_details'),
+                Tables\Columns\TextColumn::make('bank_details')
+                    ->copyable(),
             ])
             ->filters([
                 //
