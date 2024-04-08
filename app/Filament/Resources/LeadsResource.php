@@ -10,6 +10,7 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -28,6 +29,7 @@ class LeadsResource extends Resource
     {
         return $form
             ->schema([
+                Forms\Components\TextInput::make('team'),
                 Forms\Components\Select::make('status')
                     ->options([
                         'Denied' => 'Denied',
@@ -136,6 +138,9 @@ class LeadsResource extends Resource
                     ->date()
                     ->copyable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('team')
+                    ->copyable()
+                    ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->copyable()
@@ -224,8 +229,8 @@ class LeadsResource extends Resource
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make(),
+                    ExportBulkAction::make(),
                 ]),
-                ExportBulkAction::make()
             ]);
     }
 

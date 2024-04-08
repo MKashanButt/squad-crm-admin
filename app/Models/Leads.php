@@ -42,7 +42,8 @@ class Leads extends Model
         'center_code_id',
         'insurance_id',
         'products_id',
-        'transfer_status'
+        'transfer_status',
+        'team'
     ];
 
     /**
