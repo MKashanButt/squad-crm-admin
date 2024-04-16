@@ -140,8 +140,7 @@ class LeadsResource extends Resource
                     ->date()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('team')
-                    ->copyable()
+                Tables\Columns\TextInputColumn::make('team')
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
