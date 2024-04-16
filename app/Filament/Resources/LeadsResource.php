@@ -12,6 +12,8 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\QueryBuilder;
+use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -221,7 +223,18 @@ class LeadsResource extends Resource
                 SelectFilter::make('center_code_id')
                     ->relationship('centerCode', 'code')
                     ->searchable()
-                    ->preload()
+                    ->preload(),
+                Filter::make('created_at')
+                    ->form([
+                        DatePicker::make('created_at')
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['created_at'],
+                                fn (Builder $query, $data) => $query->where('created_at', $data)
+                            );
+                    }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
