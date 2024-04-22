@@ -57,7 +57,7 @@ class Leads extends Model
         'center_code_id' => 'integer',
         'insurance_id' => 'integer',
         'products_id' => 'integer',
-        'status' => InputStatus::class,
+        'status' => 'string',
         'transfer_status' => InputStatus::class,
     ];
 
