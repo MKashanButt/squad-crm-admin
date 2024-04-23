@@ -233,6 +233,7 @@ class LeadsResource extends Resource
                 Filter::make('created_at')
                     ->form([
                         DatePicker::make('created_at')
+                            ->format('m d, y')
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
