@@ -197,6 +197,9 @@ class LeadsResource extends Resource
                 Tables\Columns\TextColumn::make('facility_name')
                     ->copyable()
                     ->searchable(),
+                Tables\Columns\TextColumn::make('doctor_address')
+                    ->copyable()
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('patient_last_visit')
                     ->copyable()
                     ->searchable(),
