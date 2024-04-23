@@ -238,7 +238,7 @@ class LeadsResource extends Resource
                         return $query
                             ->when(
                                 $data['created_at'],
-                                fn (Builder $query, $data) => $query->whereCreatedAt($data)
+                                fn (Builder $query, $data) => $query->where('created_at', $data)
                             );
                     }),
             ])
