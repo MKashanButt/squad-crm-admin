@@ -7,7 +7,10 @@ use App\Filament\Resources\LeadsResource\RelationManagers;
 use App\Models\Leads;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
+use Filament\Notifications\Collection;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\BulkAction;
@@ -247,6 +250,34 @@ class LeadsResource extends Resource
                     Tables\Actions\DeleteBulkAction::make(),
                     ExportBulkAction::make(),
                 ]),
+                BulkAction::make('updateStatus')
+                    ->form(function ($records) {
+                        return [
+                            Select::make('status')
+                                ->label('Update Status')
+                                ->options([
+                                    'denied' => 'Denied',
+                                    'error' => 'Error',
+                                    'payable' => 'Payable',
+                                    'approved' => 'Approved',
+                                    'wrong doc' => 'Wrong doc',
+                                    'paid' => 'Paid',
+                                ]),
+                        ];
+                    })
+                    ->action(function ($records, array $data) use ($table) {
+                        $newStatus = $data['status'];
+
+                        foreach ($records as $record) {
+                            $record->update(['status' => $newStatus]);
+                        }
+
+                        Notification::make()
+                            ->success()
+                            ->title('Status Updated')
+                            ->body('Status updated successfully for ' . count($records) . ' records.')
+                            ->send();
+                    }),
             ]);
     }
 
