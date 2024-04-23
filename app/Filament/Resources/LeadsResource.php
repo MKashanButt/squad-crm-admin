@@ -140,6 +140,7 @@ class LeadsResource extends Resource
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
+                    ->date()
                     ->copyable()
                     ->sortable(),
                 Tables\Columns\TextInputColumn::make('team')
