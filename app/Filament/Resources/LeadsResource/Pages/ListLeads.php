@@ -13,7 +13,8 @@ class ListLeads extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Actions\CreateAction::make(),
+            \Filament\Actions\CreateAction::make()
+                ->visible(fn(): bool => auth()->user()->hasRole('agent'))
         ];
     }
 }

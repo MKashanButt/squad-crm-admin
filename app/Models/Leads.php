@@ -42,8 +42,7 @@ class Leads extends Model
         'center_code_id',
         'insurance_id',
         'products_id',
-        'transfer_status',
-        'team'
+        'user_id',
     ];
 
     /**
@@ -76,8 +75,19 @@ class Leads extends Model
         return $this->belongsTo(Products::class);
     }
 
-    public function users(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($lead) {
+            if (!auth()->user()->hasRole('admin')) {
+                abort(403, 'Only admins can delete leads');
+            }
+        });
     }
 }

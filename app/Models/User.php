@@ -10,10 +10,17 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    // Define the enum values (adjust according to your actual enum)
+    public const ROLE_ADMIN = 'admin';
+    public const ROLE_AGENT = 'agent';
+    public const ROLE_MANAGER = 'manager';
+
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role', // enum column (not 'roles')
+        'team',
         'bank_details',
     ];
 
@@ -28,5 +35,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Check if user has a specific role
+    public function hasRole(string $role): bool
+    {
+        return $this->role === $role;
+    }
+
+    // Optional: Helper methods for specific roles
+    public function isAgent(): bool
+    {
+        return $this->hasRole(self::ROLE_AGENT);
     }
 }

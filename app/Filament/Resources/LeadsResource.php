@@ -7,6 +7,7 @@ use App\Filament\Resources\LeadsResource\RelationManagers;
 use App\Models\Leads;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
 use Filament\Notifications\Collection;
@@ -36,7 +37,13 @@ class LeadsResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('team'),
+                Forms\Components\TextInput::make('team')
+                    ->default(function () {
+                        $team = auth()->user()->team;
+                        return ucfirst(strtolower($team));
+                    })
+                    ->readOnly()
+                    ->dehydrated(),
                 Forms\Components\Select::make('status')
                     ->options([
                         'Denied' => 'Denied',
@@ -128,37 +135,49 @@ class LeadsResource extends Resource
                 Forms\Components\Textarea::make('comments')
                     ->required()
                     ->columnSpanFull(),
+                Forms\Components\Hidden::make('user_id')
+                    ->default(auth()->id())
             ]);
     }
 
     public static function table(Table $table): Table
     {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+
         return $table
-            ->modifyQueryUsing(function (Builder $query) {
+            ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
                 $query->where('status', '!=', 'payable')
                     ->orderBy('id', 'desc');
                 $query->where('status', '!=', 'paid')
                     ->orderBy('id', 'desc');
+                if (!$isAdmin) {
+                    $query->where('user_id', $user->id);
+                }
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->date()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextInputColumn::make('team')
-                    ->extraAttributes([
-                        'class' => 'width-full',
-                    ])
+                Tables\Columns\TextColumn::make('user.team')
+                    ->formatStateUsing(fn($record) => ucwords($record->user->team)) // Show user's team
+                    ->extraAttributes(['class' => 'width-full'])
                     ->sortable(),
-                Tables\Columns\TextInputColumn::make('status')
-                    ->extraAttributes([
-                        'class' => 'width-full',
+                $isAdmin
+                    ? Tables\Columns\SelectColumn::make('status')
+                    ->options([
+                        'billable' => 'Billable',
+                        'paid' => 'Paid',
                     ])
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('transfer_status')
-                    ->badge('status')
-                    ->copyable()
-                    ->searchable(),
+                    ->default('new')
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->searchable()
+                    ->disabled(fn() => !$isAdmin)
+                    : Tables\Columns\TextColumn::make('status')
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->searchable()
+                    ->formatStateUsing(fn(string $state): string => ucfirst($state)),
                 Tables\Columns\TextColumn::make('centerCode.code')
                     ->numeric()
                     ->copyable()
@@ -246,16 +265,19 @@ class LeadsResource extends Resource
                         return $query
                             ->when(
                                 $data['created_at'],
-                                fn (Builder $query, $data) => $query->where('created_at', $data)
+                                fn(Builder $query, $data) => $query->where('created_at', $data)
                             );
                     }),
             ])
             ->actions([
                 Tables\Actions\EditAction::make(),
+                Tables\Actions\DeleteAction::make()
+                    ->visible(fn(): bool => $isAdmin)
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn(): bool => $isAdmin),
                     ExportBulkAction::make(),
                 ]),
                 BulkAction::make('updateStatus')
@@ -303,5 +325,11 @@ class LeadsResource extends Resource
             'create' => Pages\CreateLeads::route('/create'),
             'edit' => Pages\EditLeads::route('/{record}/edit'),
         ];
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->with(['user']); // Eager load user relationship
     }
 }
