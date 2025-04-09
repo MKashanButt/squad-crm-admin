@@ -7,6 +7,7 @@ use App\Filament\Resources\PayableResource\Pages;
 use App\Filament\Resources\LeadsResource\Pages as LeadPages;
 use App\Filament\Resources\PayableResource\RelationManagers;
 use App\Models\Payable;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Form;
@@ -39,7 +40,7 @@ class PayableResource extends Resource
                     ->noSearchResultsMessage('No Center Found')
                     ->required(),
                 Forms\Components\Select::make('insurance_id')
-                    ->relationship('insurance', 'insurance')
+                    ->relationship('insurance', 'name')
                     ->required(),
                 Forms\Components\Select::make('products_id')
                     ->relationship('products', 'products')
@@ -117,9 +118,27 @@ class PayableResource extends Resource
         $isAdmin = $user->hasRole('admin');
 
         return $table
-            ->modifyQueryUsing(function (Builder $query) {
+            ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
                 $query->where('status', 'billable')
                     ->orderBy('id', 'desc');
+                if (request()->has('filters.team')) {
+                    $query->whereHas('user', function ($q) {  // Must match the relationship name
+                        $q->where('team', request('filters.team'));
+                    });
+                }
+
+                // Restrict to user's leads if not admin
+                if (!$isAdmin) {
+                    if ($user->hasRole('manager')) {
+                        // For managers, show all leads from their team
+                        $query->whereHas('user', function ($q) use ($user) {
+                            $q->where('team', strtolower($user->name)); // team = username (lowercase)
+                        });
+                    } else {
+                        // For regular agents, show only their own leads
+                        $query->where('user_id', $user->id);
+                    }
+                }
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
@@ -196,7 +215,28 @@ class PayableResource extends Resource
                     ->copyable()
                     ->searchable()
             ])
-            ->filters([])
+            ->filters([
+                SelectFilter::make('team')
+                    ->relationship('user', 'team')
+                    ->searchable()
+                    ->preload()
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->label('Team')
+                    ->options(function () {
+                        return User::select('team')
+                            ->whereNotNull('team')
+                            ->whereRaw('UCWORDS(team) != ?', ['alpha'])
+                            ->groupBy('team')
+                            ->orderBy('team')
+                            ->get()
+                            ->pluck('team')
+                            ->reject(fn($team) => strtolower($team) === 'alpha') // Case-insensitive rejection
+                            ->mapWithKeys(fn($team) => [
+                                $team => ucwords(strtolower($team))
+                            ])
+                            ->toArray();
+                    })
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->visible(fn() => Auth::user()->hasRole('admin')),
