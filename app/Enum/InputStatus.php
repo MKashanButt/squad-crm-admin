@@ -9,12 +9,14 @@ enum InputStatus: string implements HasLabel, HasColor
 {
     case BILLABLE = 'billable';
     case PAID = 'paid';
+    case RETURNED = 'returned';
 
     public function getLabel(): ?string
     {
         return match ($this) {
             self::PAID => 'paid',
             self::BILLABLE => 'billable',
+            self::RETURNED => 'returned',
         };
     }
     public function getColor(): string|array|null
@@ -22,6 +24,7 @@ enum InputStatus: string implements HasLabel, HasColor
         return match ($this) {
             self::BILLABLE => 'orange',
             self::PAID => 'success',
+            self::RETURNED => 'danger',
         };
     }
 }
