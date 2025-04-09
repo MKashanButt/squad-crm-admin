@@ -16,7 +16,7 @@ class Insurance extends Model
      * @var array
      */
     protected $fillable = [
-        'insurance',
+        'name',
     ];
 
     /**

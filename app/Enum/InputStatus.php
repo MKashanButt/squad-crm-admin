@@ -7,42 +7,21 @@ use Filament\Support\Contracts\HasLabel;
 
 enum InputStatus: string implements HasLabel, HasColor
 {
-    case DENIED = 'Denied';
-    case ERROR = 'Error';
-    case PAYABLE = 'Payable';
-    case APPROVED = 'Approved';
-    case WRONG_DOC = 'Wrong doc';
-    case PAID = 'Paid';
-    case AWAITING = 'Awaiting';
-    case TRANSFERRED = 'Transferred';
-    case NOT_TRANSFERRED = 'Not transferred';
+    case BILLABLE = 'billable';
+    case PAID = 'paid';
 
     public function getLabel(): ?string
     {
         return match ($this) {
-            self::DENIED => 'Denied',
-            self::ERROR => 'Error',
-            self::PAYABLE => 'Payable',
-            self::APPROVED => 'Approved',
-            self::WRONG_DOC => 'Wrong doc',
-            self::PAID => 'Paid',
-            self::AWAITING => 'Awaiting',
-            self::TRANSFERRED => 'Transferred',
-            self::NOT_TRANSFERRED => 'Not transferred',
+            self::PAID => 'paid',
+            self::BILLABLE => 'billable',
         };
     }
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::DENIED => 'danger',
-            self::ERROR => 'warning',
-            self::PAYABLE => 'orange',
-            self::APPROVED => 'success',
-            self::WRONG_DOC => 'pink',
-            self::PAID => 'cyan',
-            self::AWAITING => '',
-            self::TRANSFERRED => 'primary',
-            self::NOT_TRANSFERRED => 'danger',
+            self::BILLABLE => 'orange',
+            self::PAID => 'success',
         };
     }
 }

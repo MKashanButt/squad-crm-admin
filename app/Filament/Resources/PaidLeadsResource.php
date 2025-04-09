@@ -3,16 +3,17 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaidLeadsResource\Pages;
-use App\Filament\Resources\PaidLeadsResource\RelationManagers;
+use App\Filament\Widgets\PaidLeadsAmountWidget;
+use App\Models\Leads;
 use App\Models\PaidLeads;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Database\Eloquent\Model;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class PaidLeadsResource extends Resource
@@ -29,27 +30,9 @@ class PaidLeadsResource extends Resource
             ->schema([
                 Forms\Components\Select::make('status')
                     ->options([
-                        'Denied' => 'Denied',
-                        'Error' => 'Error',
-                        'Payable' => 'Payable',
-                        'Approved' => 'Approved',
-                        'Wrong Doc' => 'Wrong Doc',
-                        'Paid' => 'Paid',
-                        'Awaiting' => 'Awaiting'
+                        'billable' => 'Billable',
+                        'paid' => 'Paid',
                     ])
-                    ->required(),
-                Forms\Components\Select::make('transfer_status')
-                    ->options([
-                        'Transferred' => 'Transferred',
-                        'Not transferred' => 'Not transferred',
-                        'Awaiting' => 'Awaiting'
-                    ])
-                    ->required(),
-                Forms\Components\Select::make('center_code_id')
-                    ->relationship('centerCode', 'code')
-                    ->searchable()
-                    ->preload()
-                    ->noSearchResultsMessage('No Center Found')
                     ->required(),
                 Forms\Components\Select::make('insurance_id')
                     ->relationship('insurance', 'insurance')
@@ -74,6 +57,10 @@ class PaidLeadsResource extends Resource
                 Forms\Components\DatePicker::make('dob')
                     ->required(),
                 Forms\Components\TextInput::make('medicare_id')
+                    ->unique()
+                    ->validationMessages([
+                        'unique' => 'The Medicare Id is already present'
+                    ])
                     ->required()
                     ->maxLength(15),
                 Forms\Components\Textarea::make('address')
@@ -135,21 +122,14 @@ class PaidLeadsResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
+                    ->default(fn($record) => ucwords($record->status))
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('transfer_status')
-                    ->badge('status')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('centerCode.code')
+                Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('insurance.insurance')
-                    ->numeric()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('products.products')
+                Tables\Columns\TextColumn::make('products.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),
@@ -198,11 +178,20 @@ class PaidLeadsResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_npi')
                     ->copyable()
-                    ->searchable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('calculated_amount')
+                    ->label('Amount (PKR)')
+                    ->getStateUsing(function (PaidLeads $record): string {
+                        return number_format(1000) . ' PKR'; // Each lead = 1000 PKR
+                    })
+                    ->html()
+                    ->alignRight()
             ])
             ->filters([])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->hidden(fn(User $user): bool => $user->isAgent())
+                    ->url(fn(PaidLeads $record): string => static::getUrl('edit', ['record' => $record]))
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -218,13 +207,28 @@ class PaidLeadsResource extends Resource
             //
         ];
     }
+    public static function canCreate(): bool
+    {
+        return false;
+    }
 
+    public static function canEdit(Model $record): bool
+    {
+        return false;
+    }
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPaidLeads::route('/'),
             'create' => Pages\CreatePaidLeads::route('/create'),
             'edit' => Pages\EditPaidLeads::route('/{record}/edit'),
+        ];
+    }
+
+    protected static function getHeaderWidgets(): array
+    {
+        return [
+            PaidLeadsAmountWidget::class,
         ];
     }
 }

@@ -78,7 +78,10 @@ class UserResource extends Resource
             //
         ];
     }
-
+    public static function canAccess(): bool
+    {
+        return auth()->user()->hasRole('admin'); // or your admin check logic
+    }
     public static function getPages(): array
     {
         return [

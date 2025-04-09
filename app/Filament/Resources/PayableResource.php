@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enum\InputStatus;
 use App\Filament\Resources\PayableResource\Pages;
 use App\Filament\Resources\LeadsResource\Pages as LeadPages;
 use App\Filament\Resources\PayableResource\RelationManagers;
@@ -16,6 +17,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
+use Illuminate\Support\Facades\Auth;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class PayableResource extends Resource
@@ -111,9 +113,12 @@ class PayableResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+
         return $table
             ->modifyQueryUsing(function (Builder $query) {
-                $query->where('status', 'payable')
+                $query->where('status', 'billable')
                     ->orderBy('id', 'desc');
             })
             ->columns([
@@ -122,19 +127,25 @@ class PayableResource extends Resource
                     ->copyable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
-                Tables\Columns\TextColumn::make('status')
-                    ->badge('status')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('centerCode.code')
+                $isAdmin
+                    ? Tables\Columns\SelectColumn::make('status')
+                    ->options([
+                        'billable' => 'Billable',
+                        'paid' => 'Paid',
+                    ])
+                    ->default('new')
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->searchable()
+                    ->disabled(fn() => !$isAdmin)
+                    : Tables\Columns\TextColumn::make('status')
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->searchable()
+                    ->formatStateUsing(fn(InputStatus $state): string => $state->value),
+                Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('insurance.insurance')
-                    ->numeric()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('products.products')
+                Tables\Columns\TextColumn::make('products.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),
@@ -187,7 +198,8 @@ class PayableResource extends Resource
             ])
             ->filters([])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn() => Auth::user()->hasRole('admin')),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -203,7 +215,10 @@ class PayableResource extends Resource
             //
         ];
     }
-
+    public static function canCreate(): bool
+    {
+        return false;
+    }
     public static function getPages(): array
     {
         return [

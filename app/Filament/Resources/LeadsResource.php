@@ -3,26 +3,20 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\LeadsResource\Pages;
-use App\Filament\Resources\LeadsResource\RelationManagers;
 use App\Models\Leads;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
-use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Form;
-use Filament\Notifications\Collection;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Actions\BulkAction;
 use Filament\Tables\Filters\Filter;
-use Filament\Tables\Filters\QueryBuilder;
-use Filament\Tables\Filters\QueryBuilder\Constraints\DateConstraint;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
-use Laravel\Prompts\SearchPrompt;
+use Illuminate\Support\Facades\Auth;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class LeadsResource extends Resource
@@ -54,25 +48,13 @@ class LeadsResource extends Resource
                         'Paid' => 'Paid',
                         'Awaiting' => 'Awaiting'
                     ])
-                    ->required(),
-                Forms\Components\Select::make('transfer_status')
-                    ->options([
-                        'Transferred' => 'Transferred',
-                        'Not transferred' => 'Not transferred',
-                        'Awaiting' => 'Awaiting'
-                    ])
-                    ->required(),
-                Forms\Components\Select::make('center_code_id')
-                    ->relationship('centerCode', 'code')
-                    ->searchable()
-                    ->preload()
-                    ->noSearchResultsMessage('No Center Found')
+                    ->visible(fn(): bool => Auth::user()->hasRole('admin'))
                     ->required(),
                 Forms\Components\Select::make('insurance_id')
-                    ->relationship('insurance', 'insurance')
+                    ->relationship('insurance', 'name')
                     ->required(),
                 Forms\Components\Select::make('products_id')
-                    ->relationship('products', 'products')
+                    ->relationship('products', 'name')
                     ->required(),
                 Forms\Components\TextInput::make('patient_phone')
                     ->tel()
@@ -91,6 +73,10 @@ class LeadsResource extends Resource
                 Forms\Components\DatePicker::make('dob')
                     ->required(),
                 Forms\Components\TextInput::make('medicare_id')
+                    ->unique()
+                    ->validationMessages([
+                        'unique' => 'The Medicare Id is already present'
+                    ])
                     ->required()
                     ->maxLength(15),
                 Forms\Components\Textarea::make('address')
@@ -147,7 +133,7 @@ class LeadsResource extends Resource
 
         return $table
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
-                $query->where('status', '!=', 'payable')
+                $query->where('status', '!=', 'billable')
                     ->orderBy('id', 'desc');
                 $query->where('status', '!=', 'paid')
                     ->orderBy('id', 'desc');
@@ -178,15 +164,11 @@ class LeadsResource extends Resource
                     ->extraAttributes(['class' => 'width-full'])
                     ->searchable()
                     ->formatStateUsing(fn(string $state): string => ucfirst($state)),
-                Tables\Columns\TextColumn::make('centerCode.code')
+                Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('insurance.insurance')
-                    ->numeric()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('products.products')
+                Tables\Columns\TextColumn::make('products.name')
                     ->numeric()
                     ->copyable()
                     ->sortable(),

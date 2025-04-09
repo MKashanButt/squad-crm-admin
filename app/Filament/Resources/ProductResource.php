@@ -2,23 +2,17 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\CampaignResource\Pages;
-use App\Filament\Resources\CampaignResource\RelationManagers;
-use App\Models\Campaign;
+use App\Filament\Resources\ProductResource\Pages;
+use App\Models\Products;
 use Filament\Forms;
-use Filament\Forms\Components\RichEditor;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
-class CampaignResource extends Resource
+class ProductResource extends Resource
 {
-    protected static ?string $model = Campaign::class;
+    protected static ?string $model = Products::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
@@ -28,9 +22,7 @@ class CampaignResource extends Resource
     {
         return $form
             ->schema([
-                TextInput::make('name'),
-                RichEditor::make('info')
-                    ->columnSpanFull()
+                Forms\Components\TextInput::make('name'),
             ]);
     }
 
@@ -38,13 +30,12 @@ class CampaignResource extends Resource
     {
         return $table
             ->columns([
-                TextColumn::make('name'),
+                Tables\Columns\TextColumn::make('name'),
             ])
             ->filters([
                 //
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
                 Tables\Actions\EditAction::make(),
             ])
             ->bulkActions([
@@ -60,14 +51,16 @@ class CampaignResource extends Resource
             //
         ];
     }
-
+    public static function canAccess(): bool
+    {
+        return auth()->user()->hasRole('admin'); // or your admin check logic
+    }
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListCampaigns::route('/'),
-            'create' => Pages\CreateCampaign::route('/create'),
-            'view' => Pages\ViewCampaign::route('/{record}'),
-            'edit' => Pages\EditCampaign::route('/{record}/edit'),
+            'index' => Pages\ListProducts::route('/'),
+            'create' => Pages\CreateProduct::route('/create'),
+            'edit' => Pages\EditProduct::route('/{record}/edit'),
         ];
     }
 }
