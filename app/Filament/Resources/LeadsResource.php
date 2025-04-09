@@ -59,6 +59,10 @@ class LeadsResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('patient_phone')
                     ->tel()
+                    ->unique()
+                    ->validationMessages([
+                        'unique' => 'The number is already present'
+                    ])
                     ->required()
                     ->maxLength(15),
                 Forms\Components\TextInput::make('secondary_phone')
