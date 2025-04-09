@@ -25,6 +25,9 @@ class PaidLeadsResource extends Resource
 
     protected static ?int $navigationSort = 3;
 
+    protected static ?string $label = 'Commission Paid';
+    protected static ?string $pluralLabel = 'Commission Paid';
+
     public static function form(Form $form): Form
     {
         return $form

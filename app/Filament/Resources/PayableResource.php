@@ -29,6 +29,9 @@ class PayableResource extends Resource
 
     protected static ?int $navigationSort = 2;
 
+    protected static ?string $label = 'Commission Payable';
+    protected static ?string $pluralLabel = 'Commission Payable';
+
     public static function form(Form $form): Form
     {
         return $form
