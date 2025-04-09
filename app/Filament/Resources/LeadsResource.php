@@ -97,9 +97,6 @@ class LeadsResource extends Resource
                 Forms\Components\TextInput::make('doctor_name')
                     ->required()
                     ->maxLength(30),
-                Forms\Components\TextInput::make('facility_name')
-                    ->required()
-                    ->maxLength(20),
                 Forms\Components\TextInput::make('patient_last_visit')
                     ->required()
                     ->maxLength(20),
@@ -204,9 +201,6 @@ class LeadsResource extends Resource
                     ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_name')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('facility_name')
                     ->copyable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_address')

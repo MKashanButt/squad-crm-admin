@@ -30,7 +30,6 @@ class Leads extends Model
         'zip',
         'product_specs',
         'doctor_name',
-        'facility_name',
         'patient_last_visit',
         'doctor_address',
         'doctor_phone',
