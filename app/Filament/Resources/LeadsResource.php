@@ -128,7 +128,6 @@ class LeadsResource extends Resource
     {
         $user = auth()->user();
         $isAdmin = $user->hasRole('admin');
-        $isManager = $user->hasRole('manager');
 
         return $table
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
