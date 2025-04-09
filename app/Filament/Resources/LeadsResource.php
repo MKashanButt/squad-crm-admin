@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\LeadsResource\Pages;
 use App\Models\Leads;
+use App\Models\User;
 use Filament\Forms;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
@@ -127,15 +128,32 @@ class LeadsResource extends Resource
     {
         $user = auth()->user();
         $isAdmin = $user->hasRole('admin');
+        $isManager = $user->hasRole('manager');
 
         return $table
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
                 $query->where('status', '!=', 'billable')
+                    ->where('status', '!=', 'paid')
                     ->orderBy('id', 'desc');
-                $query->where('status', '!=', 'paid')
-                    ->orderBy('id', 'desc');
+
+                // Apply team filter if it exists in request
+                if (request()->has('filters.team')) {
+                    $query->whereHas('user', function ($q) {
+                        $q->where('team', request('filters.team'));
+                    });
+                }
+
+                // Restrict to user's leads if not admin
                 if (!$isAdmin) {
-                    $query->where('user_id', $user->id);
+                    if ($user->hasRole('manager')) {
+                        // For managers, show all leads from their team
+                        $query->whereHas('user', function ($q) use ($user) {
+                            $q->where('team', strtolower($user->name)); // team = username (lowercase)
+                        });
+                    } else {
+                        // For regular agents, show only their own leads
+                        $query->where('user_id', $user->id);
+                    }
                 }
             })
             ->columns([
@@ -220,19 +238,26 @@ class LeadsResource extends Resource
                     ->searchable()
             ])
             ->filters([
-                SelectFilter::make('status')
-                    ->options([
-                        'denied' => 'Denied',
-                        'error' => 'Error',
-                        'payable' => 'Payable',
-                        'approved' => 'Approved',
-                        'wrong doc' => 'Wrong doc',
-                        'paid' => 'Paid',
-                    ]),
-                SelectFilter::make('center_code_id')
-                    ->relationship('centerCode', 'code')
+                SelectFilter::make('team')
+                    ->relationship('user', 'team')
                     ->searchable()
-                    ->preload(),
+                    ->preload()
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->label('Team')
+                    ->options(function () {
+                        return User::select('team')
+                            ->whereNotNull('team')
+                            ->whereRaw('UCWORDS(team) != ?', ['alpha'])
+                            ->groupBy('team')
+                            ->orderBy('team')
+                            ->get()
+                            ->pluck('team')
+                            ->reject(fn($team) => strtolower($team) === 'alpha') // Case-insensitive rejection
+                            ->mapWithKeys(fn($team) => [
+                                $team => ucwords(strtolower($team))
+                            ])
+                            ->toArray();
+                    }),
                 Filter::make('created_at')
                     ->form([
                         DatePicker::make('created_at')
@@ -292,6 +317,12 @@ class LeadsResource extends Resource
         return [
             //
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        $user = auth()->user();
+        return $user->hasRole('agent'); // Only allow admins to create
     }
 
     public static function getPages(): array
