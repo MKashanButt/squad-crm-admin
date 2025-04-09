@@ -199,9 +199,6 @@ class PayableResource extends Resource
                 Tables\Columns\TextColumn::make('doctor_name')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('facility_name')
-                    ->copyable()
-                    ->searchable(),
                 Tables\Columns\TextColumn::make('patient_last_visit')
                     ->copyable()
                     ->searchable(),
