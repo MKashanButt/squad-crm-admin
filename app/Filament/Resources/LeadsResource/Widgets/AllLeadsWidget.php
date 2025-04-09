@@ -18,13 +18,17 @@ class AllLeadsWidget extends BaseWidget
             return $this->getAdminStats();
         }
 
+        if ($user->hasRole('manager')) {
+            return $this->getManagerStats($user);
+        }
+
         return $this->getAgentStats($user);
     }
 
     protected function getAdminStats(): array
     {
         $paidLeadsCount = Leads::where('status', 'paid')->count();
-        $totalAmount = $paidLeadsCount * 1000; // Calculate total amount
+        $totalAmount = $paidLeadsCount * 1000;
 
         return [
             Stat::make('Total Leads', Leads::count())
@@ -46,13 +50,54 @@ class AllLeadsWidget extends BaseWidget
         ];
     }
 
+    protected function getManagerStats(User $manager): array
+    {
+        $teamName = strtolower($manager->name);
+
+        $teamLeadsCount = Leads::whereHas('user', function ($query) use ($teamName) {
+            $query->where('team', $teamName);
+        })
+            ->count();
+
+        $billedLeadsCount = Leads::whereHas('user', function ($query) use ($teamName) {
+            $query->where('team', $teamName);
+        })
+            ->where('status', 'billed')
+            ->count();
+
+        $totalCommission = $billedLeadsCount * 500;
+
+        return [
+            Stat::make('Team Leads', $teamLeadsCount)
+                ->description('Total leads in your team')
+                ->descriptionIcon('heroicon-o-user-group')
+                ->color('primary')
+                ->chart($this->getTeamLeadsChartData($teamName)),
+
+            Stat::make('Billed Leads', $billedLeadsCount)
+                ->description('Billed leads in your team')
+                ->descriptionIcon('heroicon-o-document-check')
+                ->color('success'),
+
+            Stat::make('Your Commission', number_format($totalCommission) . ' PKR')
+                ->description('500 PKR per billed lead')
+                ->descriptionIcon('heroicon-o-banknotes')
+                ->color('primary'),
+
+            Stat::make('Billing Rate', $this->getBillingRate($teamName))
+                ->description('Team lead to billed conversion')
+                ->descriptionIcon('heroicon-o-arrow-trending-up')
+                ->color('info'),
+        ];
+    }
+
     protected function getAgentStats(User $agent): array
     {
         $paidLeadsCount = Leads::where('user_id', $agent->id)
             ->where('status', 'billable')
             ->count();
 
-        $totalAmount = $paidLeadsCount * 1000; // Calculate agent's amount
+        $totalAmount = $paidLeadsCount * 1000;
 
         return [
             Stat::make('Your Leads', Leads::where('user_id', $agent->id)->count())
@@ -76,6 +121,38 @@ class AllLeadsWidget extends BaseWidget
                 ->descriptionIcon('heroicon-o-arrow-trending-up')
                 ->color('info'),
         ];
+    }
+
+    // New method for manager team leads chart
+    protected function getTeamLeadsChartData(string $teamName): array
+    {
+        return Leads::whereHas('user', function ($query) use ($teamName) {
+            $query->where('team', $teamName);
+        })
+            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
+            ->whereBetween('created_at', [now()->subDays(30), now()])
+            ->groupBy('date')
+            ->orderBy('date')
+            ->pluck('count')
+            ->toArray();
+    }
+
+    // New method for manager billing rate
+    protected function getBillingRate(string $teamName): string
+    {
+        $total = Leads::whereHas('user', function ($query) use ($teamName) {
+            $query->where('team', $teamName);
+        })->count();
+
+        $billed = Leads::whereHas('user', function ($query) use ($teamName) {
+            $query->where('team', $teamName);
+        })
+            ->where('status', 'billed')
+            ->count();
+
+        return $total > 0
+            ? number_format(($billed / $total) * 100, 2) . '%'
+            : '0%';
     }
 
     // New method for admin amount trend data
