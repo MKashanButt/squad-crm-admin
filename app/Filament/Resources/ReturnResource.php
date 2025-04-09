@@ -3,23 +3,23 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\ReturnResource\Pages;
-use App\Filament\Resources\ReturnResource\RelationManagers;
 use App\Models\Leads;
+use App\Models\ReturnLeads;
 use App\Models\User;
-use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ReturnResource extends Resource
 {
-    protected static ?string $model = Leads::class;
+    protected static ?string $model = ReturnLeads::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+
+    protected static ?int $navigationSort = 4;
 
     public static function form(Form $form): Form
     {
@@ -159,6 +159,10 @@ class ReturnResource extends Resource
         return [
             //
         ];
+    }
+    public static function canCreate(): bool
+    {
+        return false;
     }
 
     public static function getPages(): array
