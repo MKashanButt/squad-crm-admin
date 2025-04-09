@@ -49,7 +49,7 @@ class AllLeadsWidget extends BaseWidget
     protected function getAgentStats(User $agent): array
     {
         $paidLeadsCount = Leads::where('user_id', $agent->id)
-            ->where('status', 'paid')
+            ->where('status', 'billable')
             ->count();
 
         $totalAmount = $paidLeadsCount * 1000; // Calculate agent's amount
