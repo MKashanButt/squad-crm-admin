@@ -41,13 +41,9 @@ class LeadsResource extends Resource
                     ->dehydrated(),
                 Forms\Components\Select::make('status')
                     ->options([
-                        'Denied' => 'Denied',
-                        'Error' => 'Error',
-                        'Payable' => 'Payable',
-                        'Approved' => 'Approved',
-                        'Wrong Doc' => 'Wrong Doc',
-                        'Paid' => 'Paid',
-                        'Awaiting' => 'Awaiting'
+                        'returned' => 'Returned',
+                        'billable' => 'Billable',
+                        'paid' => 'Paid',
                     ])
                     ->visible(fn(): bool => Auth::user()->hasRole('admin'))
                     ->required(),
@@ -171,6 +167,7 @@ class LeadsResource extends Resource
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
+                        'returned' => 'Returned',
                         'billable' => 'Billable',
                         'paid' => 'Paid',
                     ])
