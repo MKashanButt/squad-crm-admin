@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
+use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -107,10 +108,32 @@ class PaidLeadsResource extends Resource
 
     public static function table(Table $table): Table
     {
+        $user = auth()->user();
+        $isAdmin = $user->hasRole('admin');
+
         return $table
-            ->modifyQueryUsing(function (Builder $query) {
+            ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
                 $query->where('status', 'Paid')
                     ->orderBy('id', 'desc');
+
+                if (request()->has('filters.team')) {
+                    $query->whereHas('user', function ($q) {
+                        $q->where('team', request('filters.team'));
+                    });
+                }
+
+                // Restrict to user's leads if not admin
+                if (!$isAdmin) {
+                    if ($user->hasRole('manager')) {
+                        // For managers, show all leads from their team
+                        $query->whereHas('user', function ($q) use ($user) {
+                            $q->where('team', strtolower($user->name)); // team = username (lowercase)
+                        });
+                    } else {
+                        // For regular agents, show only their own leads
+                        $query->where('user_id', $user->id);
+                    }
+                }
             })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
@@ -181,7 +204,28 @@ class PaidLeadsResource extends Resource
                     ->html()
                     ->alignRight()
             ])
-            ->filters([])
+            ->filters([
+                SelectFilter::make('team')
+                    ->relationship('user', 'team')
+                    ->searchable()
+                    ->preload()
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->label('Team')
+                    ->options(function () {
+                        return User::select('team')
+                            ->whereNotNull('team')
+                            ->whereRaw('UCWORDS(team) != ?', ['alpha'])
+                            ->groupBy('team')
+                            ->orderBy('team')
+                            ->get()
+                            ->pluck('team')
+                            ->reject(fn($team) => strtolower($team) === 'alpha') // Case-insensitive rejection
+                            ->mapWithKeys(fn($team) => [
+                                $team => ucwords(strtolower($team))
+                            ])
+                            ->toArray();
+                    })
+            ])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->hidden(fn(User $user): bool => $user->isAgent())
