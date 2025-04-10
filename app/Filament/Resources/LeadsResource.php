@@ -32,13 +32,6 @@ class LeadsResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\TextInput::make('team')
-                    ->default(function () {
-                        $team = auth()->user()->team;
-                        return ucfirst(strtolower($team));
-                    })
-                    ->readOnly()
-                    ->dehydrated(),
                 Forms\Components\Select::make('status')
                     ->options([
                         'returned' => 'Returned',
@@ -160,10 +153,20 @@ class LeadsResource extends Resource
                     ->date()
                     ->copyable()
                     ->sortable(),
-                Tables\Columns\TextColumn::make('user.team')
-                    ->formatStateUsing(fn($record) => ucwords($record->user->team)) // Show user's team
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent Name')
+                    ->formatStateUsing(function ($state) {
+                        return $state ? ucwords($state) : 'N/A';
+                    })
                     ->extraAttributes(['class' => 'width-full'])
-                    ->sortable(),
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->sortable()
+                    ->searchable(
+                        query: fn(Builder $query, string $search) => $query->whereHas(
+                            'user',
+                            fn($q) => $q->where('name', 'like', "%{$search}%")
+                        )
+                    ),
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
@@ -176,9 +179,8 @@ class LeadsResource extends Resource
                     ->searchable()
                     ->disabled(fn() => !$isAdmin)
                     : Tables\Columns\TextColumn::make('status')
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->searchable()
-                    ->formatStateUsing(fn(string $state): string => ucfirst($state)),
+                    ->badge('primary')
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
@@ -279,7 +281,8 @@ class LeadsResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn(): bool => $isAdmin),
-                    ExportBulkAction::make(),
+                    ExportBulkAction::make()
+                        ->visible(fn(): bool => $isAdmin),
                 ]),
                 BulkAction::make('updateStatus')
                     ->form(function ($records) {
@@ -308,7 +311,8 @@ class LeadsResource extends Resource
                             ->title('Status Updated')
                             ->body('Status updated successfully for ' . count($records) . ' records.')
                             ->send();
-                    }),
+                    })
+                    ->visible(fn(): bool => $isAdmin),
             ]);
     }
 
