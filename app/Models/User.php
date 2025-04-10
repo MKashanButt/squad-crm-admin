@@ -41,7 +41,10 @@ class User extends Authenticatable
     {
         return $this->hasMany(Leads::class, 'user_id');
     }
-
+    public function billedLeads(): HasMany
+    {
+        return $this->hasMany(Leads::class)->where('status', 'billable');
+    }
     // Check if user has a specific role
     public function hasRole(string $role): bool
     {

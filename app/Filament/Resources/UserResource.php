@@ -65,19 +65,59 @@ class UserResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('leads_count')
                     ->label('Total Leads')
-                    ->state(function (User $user): int {
-                        return $user->leads_count; // From withCount
-                    })
                     ->numeric()
                     ->sortable()
-                    ->description(fn(User $user): string => "Last lead: " .
-                        ($user->leads->last()?->created_at->diffForHumans() ?? 'Never'))
+                    ->description(function (User $user): string {
+                        return $user->leads->first()
+                            ? "Last: " . $user->leads->first()->created_at->diffForHumans()
+                            : "No leads";
+                    })
                     ->color(function (User $user): string {
                         return match (true) {
                             $user->leads_count > 20 => 'success',
                             $user->leads_count > 5 => 'warning',
                             default => 'danger',
                         };
+                    }),
+                Tables\Columns\TextColumn::make('leads_count')
+                    ->label('Total Leads')
+                    ->numeric()
+                    ->sortable()
+                    ->color(function (User $user): string {
+                        return match (true) {
+                            $user->leads_count > 20 => 'success',
+                            $user->leads_count > 5 => 'warning',
+                            default => 'danger',
+                        };
+                    }),
+
+                Tables\Columns\TextColumn::make('billed_leads_count')
+                    ->label('Billed Leads')
+                    ->numeric()
+                    ->sortable()
+                    ->color('success')
+                    ->description(function (User $user): string {
+                        $lastBilled = $user->billedLeads()->latest()->first();
+                        return $lastBilled
+                            ? "Last billed: " . $lastBilled->created_at->diffForHumans()
+                            : "No billed leads";
+                    }),
+
+                Tables\Columns\TextColumn::make('commission')
+                    ->label('Commission (PKR)')
+                    ->numeric()
+                    ->sortable()
+                    ->color('primary')
+                    ->weight('bold')
+                    ->state(function (User $user): string {
+                        $billedCount = $user->billed_leads_count;
+                        $commissionRate = 1000;
+                        return number_format($billedCount * $commissionRate);
+                    })
+                    ->description(function (User $user): string {
+                        $billedCount = $user->billed_leads_count;
+                        $totalCommission = $billedCount * 500;
+                        return "{$billedCount} leads × 500 PKR = {$totalCommission} PKR";
                     }),
             ])
             ->filters([
@@ -107,9 +147,13 @@ class UserResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withCount(['leads' => function ($query) {
-                $query->where('status', '!=', 'cancelled'); // Optional filter
-            }]);
+            ->withCount([
+                'leads',
+                'billedLeads as billed_leads_count',
+                'leads as paid_leads_count' => function ($query) {
+                    $query->where('status', 'paid');
+                }
+            ]);
     }
     public static function getPages(): array
     {
