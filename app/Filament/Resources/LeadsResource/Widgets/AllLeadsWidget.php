@@ -181,7 +181,7 @@ class AllLeadsWidget extends BaseWidget
     protected function getConversionRate(User $agent): string
     {
         $total = Leads::where('user_id', $agent->id)->count();
-        $paid = Leads::where('user_id', $agent->id)->where('status', 'paid')->count();
+        $paid = Leads::where('user_id', $agent->id)->where('status', 'billable')->count();
 
         return $total > 0
             ? number_format(($paid / $total) * 100, 2) . '%'
