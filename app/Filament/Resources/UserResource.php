@@ -81,8 +81,13 @@ class UserResource extends Resource
                     }),
                 Tables\Columns\TextColumn::make('leads_count')
                     ->label('Total Leads')
+                    ->state(function (User $user): int {
+                        return $user->leads_count; // From withCount
+                    })
                     ->numeric()
                     ->sortable()
+                    ->description(fn(User $user): string => "Last lead: " .
+                        ($user->leads->last()?->created_at->diffForHumans() ?? 'Never'))
                     ->color(function (User $user): string {
                         return match (true) {
                             $user->leads_count > 20 => 'success',
@@ -90,7 +95,6 @@ class UserResource extends Resource
                             default => 'danger',
                         };
                     }),
-
                 Tables\Columns\TextColumn::make('billed_leads_count')
                     ->label('Billed Leads')
                     ->numeric()
