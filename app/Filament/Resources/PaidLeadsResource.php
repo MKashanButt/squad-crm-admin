@@ -172,7 +172,7 @@ class PaidLeadsResource extends Resource
                     : Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->default(fn($record) => ucwords($record->status))
-                    ->searchable(),,
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
