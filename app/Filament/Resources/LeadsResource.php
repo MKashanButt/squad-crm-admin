@@ -136,7 +136,7 @@ class LeadsResource extends Resource
                 }
 
                 // Restrict to user's leads if not admin
-                if (!$isAdmin) {
+                if (!$isAdmin || $user->hasRole('hr')) {
                     if ($user->hasRole('manager')) {
                         // For managers, show all leads from their team
                         $query->whereHas('user', function ($q) use ($user) {
@@ -177,7 +177,7 @@ class LeadsResource extends Resource
                     ->default('new')
                     ->extraAttributes(['class' => 'width-full'])
                     ->searchable()
-                    ->disabled(fn() => !$isAdmin)
+                    ->disabled(fn() => !$isAdmin || $user->hasRole('hr'))
                     : Tables\Columns\TextColumn::make('status')
                     ->badge('primary')
                     ->searchable(),
