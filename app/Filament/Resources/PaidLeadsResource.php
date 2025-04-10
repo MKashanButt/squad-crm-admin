@@ -149,7 +149,7 @@ class PaidLeadsResource extends Resource
                         return $state ? ucwords($state) : 'N/A';
                     })
                     ->extraAttributes(['class' => 'width-full'])
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin') && auth()->user()->hasRole('hr'))
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin') || auth()->user()->hasRole('hr'))
                     ->sortable()
                     ->searchable(
                         query: fn(Builder $query, string $search) => $query->whereHas(
