@@ -149,6 +149,20 @@ class PayableResource extends Resource
                     ->copyable()
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent Name')
+                    ->formatStateUsing(function ($state) {
+                        return $state ? ucwords($state) : 'N/A';
+                    })
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->sortable()
+                    ->searchable(
+                        query: fn(Builder $query, string $search) => $query->whereHas(
+                            'user',
+                            fn($q) => $q->where('name', 'like', "%{$search}%")
+                        )
+                    ),
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
@@ -160,9 +174,9 @@ class PayableResource extends Resource
                     ->searchable()
                     ->disabled(fn() => !$isAdmin)
                     : Tables\Columns\TextColumn::make('status')
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->searchable()
-                    ->formatStateUsing(fn(InputStatus $state): string => $state->value),
+                    ->badge('status')
+                    ->default(fn($record) => ucwords($record->status))
+                    ->searchable(),
                 Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
@@ -243,9 +257,11 @@ class PayableResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn(): bool => $isAdmin),
                 ]),
                 ExportBulkAction::make()
+                    ->visible(fn(): bool => $isAdmin),
             ]);
     }
 
