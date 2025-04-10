@@ -143,6 +143,20 @@ class PaidLeadsResource extends Resource
                     ->date()
                     ->copyable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent Name')
+                    ->formatStateUsing(function ($state) {
+                        return $state ? ucwords($state) : 'N/A';
+                    })
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->sortable()
+                    ->searchable(
+                        query: fn(Builder $query, string $search) => $query->whereHas(
+                            'user',
+                            fn($q) => $q->where('name', 'like', "%{$search}%")
+                        )
+                    ),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->default(fn($record) => ucwords($record->status))
@@ -236,9 +250,11 @@ class PaidLeadsResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn(): bool => $isAdmin),
                 ]),
                 ExportBulkAction::make()
+                    ->visible(fn(): bool => $isAdmin),
             ]);
     }
 
