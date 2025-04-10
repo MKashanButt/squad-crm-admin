@@ -122,17 +122,30 @@ class UserResource extends Resource
                     ->label('Commission (PKR)')
                     ->numeric()
                     ->sortable()
-                    ->color('primary')
+                    ->color(function (User $user): string {
+                        $commission = ($user->billed_leads_count * 1000) - ($user->return_leads_count * 1000);
+                        return $commission >= 0 ? 'primary' : 'danger'; // Red if negative
+                    })
                     ->weight('bold')
                     ->state(function (User $user): string {
-                        $billedCount = $user->billed_leads_count;
-                        $commissionRate = 1000;
-                        return number_format($billedCount * $commissionRate);
+                        $billedAmount = $user->billed_leads_count * 1000;
+                        $returnDeductions = $user->return_leads_count * 1000;
+                        $netCommission = $billedAmount - $returnDeductions;
+                        return number_format($netCommission);
                     })
                     ->description(function (User $user): string {
                         $billedCount = $user->billed_leads_count;
-                        $totalCommission = $billedCount * 1000;
-                        return "{$billedCount} leads × 1000 PKR = {$totalCommission} PKR";
+                        $returnCount = $user->return_leads_count;
+                        $totalCommission = ($billedCount * 1000) - ($returnCount * 1000);
+
+                        return sprintf(
+                            "%d billed × 1000 PKR = %s PKR\n%d returned × -1000 PKR = -%s PKR\nNet: %s PKR",
+                            $billedCount,
+                            number_format($billedCount * 1000),
+                            $returnCount,
+                            number_format($returnCount * 1000),
+                            number_format($totalCommission)
+                        );
                     }),
 
             ])
