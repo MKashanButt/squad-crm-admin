@@ -136,7 +136,7 @@ class LeadsResource extends Resource
                 }
 
                 // Restrict to user's leads if not admin
-                if (!$isAdmin || $user->hasRole('hr')) {
+                if (!$isAdmin && !$user->hasRole('hr')) {
                     if ($user->hasRole('manager')) {
                         // For managers, show all leads from their team
                         $query->whereHas('user', function ($q) use ($user) {
@@ -159,7 +159,7 @@ class LeadsResource extends Resource
                         return $state ? ucwords($state) : 'N/A';
                     })
                     ->extraAttributes(['class' => 'width-full'])
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin') && auth()->user()->hasRole('hr'))
                     ->sortable()
                     ->searchable(
                         query: fn(Builder $query, string $search) => $query->whereHas(
@@ -177,7 +177,7 @@ class LeadsResource extends Resource
                     ->default('new')
                     ->extraAttributes(['class' => 'width-full'])
                     ->searchable()
-                    ->disabled(fn() => !$isAdmin || $user->hasRole('hr'))
+                    ->disabled(fn() => !$isAdmin)
                     : Tables\Columns\TextColumn::make('status')
                     ->badge('primary')
                     ->searchable(),
@@ -273,7 +273,8 @@ class LeadsResource extends Resource
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                Tables\Actions\EditAction::make()
+                    ->visible(fn(): bool => $isAdmin),
                 Tables\Actions\DeleteAction::make()
                     ->visible(fn(): bool => $isAdmin)
             ])
