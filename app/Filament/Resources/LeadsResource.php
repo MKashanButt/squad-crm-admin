@@ -170,6 +170,7 @@ class LeadsResource extends Resource
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
+                        'new' => 'new',
                         'returned' => 'Returned',
                         'billable' => 'Billable',
                         'paid' => 'Paid',

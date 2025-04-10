@@ -157,11 +157,22 @@ class PaidLeadsResource extends Resource
                             fn($q) => $q->where('name', 'like', "%{$search}%")
                         )
                     ),
-                Tables\Columns\TextColumn::make('status')
+                $isAdmin
+                    ? Tables\Columns\SelectColumn::make('status')
+                    ->options([
+                        'new' => 'new',
+                        'returned' => 'Returned',
+                        'billable' => 'Billable',
+                        'paid' => 'Paid',
+                    ])
+                    ->default('new')
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->searchable()
+                    ->disabled(fn() => !$isAdmin)
+                    : Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->default(fn($record) => ucwords($record->status))
-                    ->copyable()
-                    ->searchable(),
+                    ->searchable(),,
                 Tables\Columns\TextColumn::make('insurance.name')
                     ->numeric()
                     ->copyable()
