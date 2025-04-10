@@ -36,7 +36,14 @@ class UserResource extends Resource
                     ->password()
                     ->required()
                     ->maxLength(255),
-                Forms\Components\Textarea::make('bank_details')
+                Forms\Components\Select::make('role')
+                    ->options([
+                        'admin' => 'Admin',
+                        'hr' => 'HR',
+                        'manager' => 'Manager',
+                        'agent' => 'Agent',
+                    ])
+                    ->required(),
             ]);
     }
 
@@ -53,11 +60,25 @@ class UserResource extends Resource
                 Tables\Columns\TextColumn::make('email')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('email_verified_at')
-                    ->dateTime()
+                Tables\Columns\TextColumn::make('role')
+                    ->formatStateUsing(fn($record) => ucwords($record->role))
                     ->sortable(),
-                Tables\Columns\TextColumn::make('bank_details')
-                    ->copyable(),
+                Tables\Columns\TextColumn::make('leads_count')
+                    ->label('Total Leads')
+                    ->state(function (User $user): int {
+                        return $user->leads_count; // From withCount
+                    })
+                    ->numeric()
+                    ->sortable()
+                    ->description(fn(User $user): string => "Last lead: " .
+                        ($user->leads->last()?->created_at->diffForHumans() ?? 'Never'))
+                    ->color(function (User $user): string {
+                        return match (true) {
+                            $user->leads_count > 20 => 'success',
+                            $user->leads_count > 5 => 'warning',
+                            default => 'danger',
+                        };
+                    }),
             ])
             ->filters([
                 //
@@ -81,6 +102,14 @@ class UserResource extends Resource
     public static function canAccess(): bool
     {
         return auth()->user()->hasRole('admin'); // or your admin check logic
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->withCount(['leads' => function ($query) {
+                $query->where('status', '!=', 'cancelled'); // Optional filter
+            }]);
     }
     public static function getPages(): array
     {
