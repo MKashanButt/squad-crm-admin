@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -19,9 +20,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
-        'role', // enum column (not 'roles')
+        'role',
         'team',
-        'bank_details',
     ];
 
     protected $hidden = [
@@ -35,6 +35,11 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Leads::class, 'user_id');
     }
 
     // Check if user has a specific role
