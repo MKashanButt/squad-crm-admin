@@ -74,7 +74,9 @@ class ReturnResource extends Resource
                     ->searchable(
                         query: fn(Builder $query, string $search) => $query->whereHas(
                             'user',
-                            fn($q) => $q->where('name', 'like', "%{$search}%"),
+                            fn($q) => $q->where('name', 'like', "%{$search}%")
+                        )
+                    ),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->default(fn($record) => ucwords($record->status))
@@ -130,7 +132,7 @@ class ReturnResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_npi')
                     ->copyable()
-                    ->searchable(),
+                    ->searchable()
             ])
             ->filters([
                 SelectFilter::make('team')
@@ -163,7 +165,7 @@ class ReturnResource extends Resource
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
                         ->visible(fn(): bool => $isAdmin),
-                ]),
+                ])
             ]);
     }
 
