@@ -22,7 +22,7 @@ enum InputStatus: string implements HasLabel, HasColor
     public function getColor(): string|array|null
     {
         return match ($this) {
-            self::BILLABLE => 'orange',
+            self::BILLABLE => 'warning',
             self::PAID => 'success',
             self::RETURNED => 'danger',
         };
