@@ -45,6 +45,11 @@ class User extends Authenticatable
     {
         return $this->hasMany(Leads::class)->where('status', 'billable');
     }
+
+    public function returnLeads(): HasMany
+    {
+        return $this->hasMany(Leads::class)->where('status', 'returned');
+    }
     // Check if user has a specific role
     public function hasRole(string $role): bool
     {

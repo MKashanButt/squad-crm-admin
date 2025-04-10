@@ -106,7 +106,18 @@ class UserResource extends Resource
                             ? "Last billed: " . $lastBilled->created_at->diffForHumans()
                             : "No billed leads";
                     }),
-
+                Tables\Columns\TextColumn::make('return_leads_count')
+                    ->label('Returned Leads')
+                    ->numeric()
+                    ->sortable()
+                    ->color('danger')
+                    ->weight('bold')
+                    ->description(function (User $user): string {
+                        $returnLeads = $user->returnLeads()->latest()->first();
+                        return $returnLeads
+                            ? "Last returned: " . $returnLeads->created_at->diffForHumans()
+                            : "No Returned leads";
+                    }),
                 Tables\Columns\TextColumn::make('commission')
                     ->label('Commission (PKR)')
                     ->numeric()
@@ -120,9 +131,10 @@ class UserResource extends Resource
                     })
                     ->description(function (User $user): string {
                         $billedCount = $user->billed_leads_count;
-                        $totalCommission = $billedCount * 500;
-                        return "{$billedCount} leads × 500 PKR = {$totalCommission} PKR";
+                        $totalCommission = $billedCount * 1000;
+                        return "{$billedCount} leads × 1000 PKR = {$totalCommission} PKR";
                     }),
+
             ])
             ->filters([
                 //
@@ -154,6 +166,7 @@ class UserResource extends Resource
             ->withCount([
                 'leads',
                 'billedLeads as billed_leads_count',
+                'returnLeads as return_leads_count',
                 'leads as paid_leads_count' => function ($query) {
                     $query->where('status', 'paid');
                 }
