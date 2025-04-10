@@ -14,7 +14,7 @@ class AllLeadsWidget extends BaseWidget
         /** @var User $user */
         $user = auth()->user();
 
-        if ($user->hasRole('admin')) {
+        if ($user->hasRole('admin') || $user->hasRole('hr')) {
             return $this->getAdminStats();
         }
 
