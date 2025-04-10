@@ -126,6 +126,7 @@ class LeadsResource extends Resource
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
                 $query->where('status', '!=', 'billable')
                     ->where('status', '!=', 'paid')
+                    ->where('status', '!=', 'returned')
                     ->orderBy('id', 'desc');
 
                 // Apply team filter if it exists in request
