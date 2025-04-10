@@ -139,7 +139,7 @@ class UserResource extends Resource
                         $totalCommission = ($billedCount * 1000) - ($returnCount * 1000);
 
                         return sprintf(
-                            "%d billed × 1000 PKR = %s PKR\n%d returned × -1000 PKR = -%s PKR\nNet: %s PKR",
+                            "%d billed × 1000 PKR = %s PKR\n%d returned × -1000 PKR = - %s PKR",
                             $billedCount,
                             number_format($billedCount * 1000),
                             $returnCount,
