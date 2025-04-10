@@ -63,6 +63,18 @@ class ReturnResource extends Resource
                     ->date()
                     ->copyable()
                     ->sortable(),
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent Name')
+                    ->formatStateUsing(function ($state) {
+                        return $state ? ucwords($state) : 'N/A';
+                    })
+                    ->extraAttributes(['class' => 'width-full'])
+                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->sortable()
+                    ->searchable(
+                        query: fn(Builder $query, string $search) => $query->whereHas(
+                            'user',
+                            fn($q) => $q->where('name', 'like', "%{$search}%"),
                 Tables\Columns\TextColumn::make('status')
                     ->badge('status')
                     ->default(fn($record) => ucwords($record->status))
@@ -149,7 +161,8 @@ class ReturnResource extends Resource
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Tables\Actions\DeleteBulkAction::make()
+                        ->visible(fn(): bool => $isAdmin),
                 ]),
             ]);
     }
@@ -163,6 +176,11 @@ class ReturnResource extends Resource
     public static function canCreate(): bool
     {
         return false;
+    }
+
+    public static function canAccess(): bool
+    {
+        return !auth()->user()->hasRole('hr'); // or your admin check logic
     }
 
     public static function getPages(): array
