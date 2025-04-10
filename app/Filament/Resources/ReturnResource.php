@@ -143,7 +143,14 @@ class ReturnResource extends Resource
                     ->searchable(),
                 Tables\Columns\TextColumn::make('doctor_npi')
                     ->copyable()
-                    ->searchable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('calculated_amount')
+                    ->label('Amount (PKR)')
+                    ->getStateUsing(function (ReturnLeads $record): string {
+                        return '- ' . number_format(1000) . ' PKR'; // Each lead = 1000 PKR
+                    })
+                    ->html()
+                    ->alignRight()
             ])
             ->filters([
                 SelectFilter::make('team')
@@ -170,7 +177,7 @@ class ReturnResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->hidden(fn(User $user): bool => $user->isAgent())
-                    ->url(fn(Leads $record): string => static::getUrl('edit', ['record' => $record]))
+                    ->url(fn(ReturnLeads $record): string => static::getUrl('edit', ['record' => $record]))
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([

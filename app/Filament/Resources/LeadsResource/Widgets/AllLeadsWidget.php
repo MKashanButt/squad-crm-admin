@@ -93,28 +93,40 @@ class AllLeadsWidget extends BaseWidget
 
     protected function getAgentStats(User $agent): array
     {
+        $totalLeads = Leads::where('user_id', $agent->id)->count();
         $paidLeadsCount = Leads::where('user_id', $agent->id)
-            ->where('status', 'billable')
+            ->where('status', 'paid')
             ->count();
 
-        $totalAmount = $paidLeadsCount * 1000;
+        $returnLeadsCount = Leads::where('user_id', $agent->id)
+            ->where('status', 'returned')
+            ->count();
+
+        $totalEarnings = ($paidLeadsCount * 1000) - ($returnLeadsCount * 1000);
+        $totalReturnsDeduction = $returnLeadsCount * 1000;
 
         return [
-            Stat::make('Your Leads', Leads::where('user_id', $agent->id)->count())
+            Stat::make('Your Leads', $totalLeads)
                 ->description('All leads assigned to you')
                 ->descriptionIcon('heroicon-o-user-circle')
                 ->color('primary')
                 ->chart($this->getAgentLeadsChartData($agent)),
 
             Stat::make('Paid Leads', $paidLeadsCount)
-                ->description('Your successfully paid leads')
+                ->description('Earned: ' . number_format($paidLeadsCount * 1000) . ' PKR')
                 ->descriptionIcon('heroicon-o-banknotes')
                 ->color('success'),
 
-            Stat::make('Your Earnings', number_format($totalAmount) . ' PKR')
-                ->description('Your commission (1000 PKR per lead)')
+            Stat::make('Returns', $returnLeadsCount)
+                ->description('Deducted: -' . number_format($totalReturnsDeduction) . ' PKR')
+                ->descriptionIcon('heroicon-o-arrow-uturn-left')
+                ->color('danger'),
+
+            Stat::make('Your Earnings', number_format($totalEarnings) . ' PKR')
+                ->description('Net commission after returns')
                 ->descriptionIcon('heroicon-o-currency-rupee')
-                ->color('primary'),
+                ->color($totalEarnings >= 0 ? 'primary' : 'danger')
+                ->chart($this->getAgentEarningsChartData($agent)),
 
             Stat::make('Conversion Rate', $this->getConversionRate($agent))
                 ->description('Your lead to paid conversion')
@@ -166,7 +178,17 @@ class AllLeadsWidget extends BaseWidget
             ->pluck('amount')
             ->toArray();
     }
-
+    protected function getAgentEarningsChartData(User $agent): array
+    {
+        return [
+            'paid' => Leads::where('user_id', $agent->id)
+                ->where('status', 'paid')
+                ->count() * 1000,
+            'returns' => Leads::where('user_id', $agent->id)
+                ->where('status', 'returned')
+                ->count() * -1000, // Negative value for chart
+        ];
+    }
     protected function getAgentLeadsChartData(User $agent): array
     {
         return Leads::where('user_id', $agent->id)
