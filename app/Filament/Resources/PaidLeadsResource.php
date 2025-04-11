@@ -161,9 +161,9 @@ class PaidLeadsResource extends Resource
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'new' => 'new',
+                        'bad lead' => 'Bad lead',
                         'returned' => 'Returned',
                         'billable' => 'Billable',
-                        'paid' => 'Paid',
                     ])
                     ->default('new')
                     ->extraAttributes(['class' => 'width-full'])

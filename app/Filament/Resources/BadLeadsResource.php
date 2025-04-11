@@ -2,9 +2,8 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\ReturnResource\Pages;
-use App\Models\Leads;
-use App\Models\ReturnLeads;
+use App\Filament\Resources\BadLeadsResource\Pages;
+use App\Models\BadLeads;
 use App\Models\User;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
@@ -13,13 +12,13 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 
-class ReturnResource extends Resource
+class BadLeadsResource extends Resource
 {
-    protected static ?string $model = ReturnLeads::class;
+    protected static ?string $model = BadLeads::class;
 
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?int $navigationSort = 4;
+    protected static ?int $navigationSort = 5;
 
     public static function form(Form $form): Form
     {
@@ -36,7 +35,7 @@ class ReturnResource extends Resource
 
         return $table
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
-                $query->where('status', 'returned')
+                $query->where('status', 'bad lead')
                     ->orderBy('id', 'desc');
 
                 if (request()->has('filters.team')) {
@@ -80,8 +79,8 @@ class ReturnResource extends Resource
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
-                        'new' => 'new',
-                        'bad lead' => 'Bad lead',
+                        'new' => 'New',
+                        'returned' => 'Returned',
                         'billable' => 'Billable',
                         'paid' => 'Paid',
                     ])
@@ -90,7 +89,7 @@ class ReturnResource extends Resource
                     ->searchable()
                     ->disabled(fn() => !$isAdmin)
                     : Tables\Columns\TextColumn::make('status')
-                    ->badge('status')
+                    ->badge('danger')
                     ->default(fn($record) => ucwords($record->status))
                     ->searchable(),
                 Tables\Columns\TextColumn::make('insurance.name')
@@ -144,13 +143,6 @@ class ReturnResource extends Resource
                 Tables\Columns\TextColumn::make('doctor_npi')
                     ->copyable()
                     ->searchable(),
-                Tables\Columns\TextColumn::make('calculated_amount')
-                    ->label('Amount (PKR)')
-                    ->getStateUsing(function (ReturnLeads $record): string {
-                        return '- ' . number_format(1000) . ' PKR'; // Each lead = 1000 PKR
-                    })
-                    ->html()
-                    ->alignRight()
             ])
             ->filters([
                 SelectFilter::make('team')
@@ -177,7 +169,7 @@ class ReturnResource extends Resource
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->hidden(fn(User $user): bool => $user->isAgent())
-                    ->url(fn(ReturnLeads $record): string => static::getUrl('edit', ['record' => $record]))
+                    ->url(fn(BadLeads $record): string => static::getUrl('edit', ['record' => $record]))
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -193,22 +185,19 @@ class ReturnResource extends Resource
             //
         ];
     }
+
     public static function canCreate(): bool
     {
         return false;
     }
 
-    public static function canAccess(): bool
-    {
-        return !auth()->user()->hasRole('hr'); // or your admin check logic
-    }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListReturns::route('/'),
-            'create' => Pages\CreateReturn::route('/create'),
-            'edit' => Pages\EditReturn::route('/{record}/edit'),
+            'index' => Pages\ListBadLeads::route('/'),
+            'create' => Pages\CreateBadLeads::route('/create'),
+            'edit' => Pages\EditBadLeads::route('/{record}/edit'),
         ];
     }
 }

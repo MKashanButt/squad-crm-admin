@@ -124,9 +124,7 @@ class LeadsResource extends Resource
 
         return $table
             ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
-                $query->where('status', '!=', 'billable')
-                    ->where('status', '!=', 'paid')
-                    ->where('status', '!=', 'returned')
+                $query->where('status', 'new')
                     ->orderBy('id', 'desc');
 
                 // Apply team filter if it exists in request
@@ -171,7 +169,7 @@ class LeadsResource extends Resource
                 $isAdmin
                     ? Tables\Columns\SelectColumn::make('status')
                     ->options([
-                        'new' => 'new',
+                        'bad lead' => 'Bad lead',
                         'returned' => 'Returned',
                         'billable' => 'Billable',
                         'paid' => 'Paid',
