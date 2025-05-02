@@ -27,7 +27,7 @@ class AllLeadsWidget extends BaseWidget
 
     protected function getAdminStats(): array
     {
-        $paidLeadsCount = Leads::where('status', 'billable')->count();
+        $paidLeadsCount = Leads::where('status', 'payable')->count();
         $totalAmount = $paidLeadsCount * 1000;
 
         return [
