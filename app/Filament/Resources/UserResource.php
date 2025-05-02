@@ -199,7 +199,7 @@ class UserResource extends Resource
             ])
             ->addSelect([
                 // Calculate commission directly in SQL for better performance
-                DB::raw('(SELECT COUNT(*) FROM form_inputs WHERE form_inputs.user_id = users.id AND status = "paid") * 1000 - 
+                DB::raw('(SELECT COUNT(*) FROM form_inputs WHERE form_inputs.user_id = users.id AND status = "payable") * 1000 - 
                  (SELECT COUNT(*) FROM form_inputs WHERE form_inputs.user_id = users.id AND status = "returned") * 1000 AS commission_amount')
             ]);;
     }

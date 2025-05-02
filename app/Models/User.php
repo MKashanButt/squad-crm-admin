@@ -44,7 +44,7 @@ class User extends Authenticatable
     }
     public function billedLeads(): HasMany
     {
-        return $this->hasMany(Leads::class)->where('status', 'billable');
+        return $this->hasMany(Leads::class)->where('status', 'payable');
     }
 
     public function returnLeads(): HasMany
