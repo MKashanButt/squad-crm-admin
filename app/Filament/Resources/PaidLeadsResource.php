@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Filament\Resources\PaidLeadsResource\Pages;
 use App\Filament\Widgets\PaidLeadsAmountWidget;
-use App\Models\Leads;
 use App\Models\PaidLeads;
 use App\Models\User;
 use Filament\Forms;
@@ -14,282 +13,311 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use pxlrbt\FilamentExcel\Actions\Tables\ExportBulkAction;
 
 class PaidLeadsResource extends Resource
 {
     protected static ?string $model = PaidLeads::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+    protected static ?string $navigationIcon = 'heroicon-o-banknotes';
     protected static ?int $navigationSort = 3;
-
-    protected static ?string $label = 'Commission Paid';
-    protected static ?string $pluralLabel = 'Commission Paid';
+    protected static ?string $label = 'Paid';
+    protected static ?string $pluralLabel = 'Paid';
+    protected static ?string $navigationGroup = 'Lead Management';
 
     public static function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Select::make('status')
-                    ->options([
-                        'billable' => 'Billable',
-                        'paid' => 'Paid',
+                Forms\Components\Section::make('Payment Information')
+                    ->schema([
+                        Forms\Components\Select::make('status')
+                            ->options([
+                                'billable' => 'Billable',
+                                'paid' => 'Paid',
+                            ])
+                            ->required(),
+                    ]),
+
+                Forms\Components\Section::make('Lead Details')
+                    ->schema([
+                        Forms\Components\Select::make('insurance_id')
+                            ->relationship('insurance', 'insurance')
+                            ->required(),
+
+                        Forms\Components\Select::make('products_id')
+                            ->relationship('products', 'products')
+                            ->required(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Patient Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('patient_phone')
+                            ->tel()
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('secondary_phone')
+                            ->tel()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('first_name')
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('last_name')
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\DatePicker::make('dob')
+                            ->required(),
+
+                        Forms\Components\TextInput::make('medicare_id')
+                            ->unique()
+                            ->validationMessages([
+                                'unique' => 'The Medicare Id is already present'
+                            ])
+                            ->required()
+                            ->maxLength(15),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Address')
+                    ->schema([
+                        Forms\Components\Textarea::make('address')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('city')
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('state')
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('zip')
+                            ->required()
+                            ->maxLength(15),
+                    ])->columns(3),
+
+                Forms\Components\Section::make('Medical Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('doctor_name')
+                            ->required()
+                            ->maxLength(30),
+
+                        Forms\Components\TextInput::make('patient_last_visit')
+                            ->required()
+                            ->maxLength(20),
+
+                        Forms\Components\Textarea::make('doctor_address')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('doctor_phone')
+                            ->tel()
+                            ->required()
+                            ->maxLength(15),
+
+                        Forms\Components\TextInput::make('doctor_fax')
+                            ->required()
+                            ->maxLength(20),
+
+                        Forms\Components\TextInput::make('doctor_npi')
+                            ->required()
+                            ->maxLength(50),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Additional Information')
+                    ->schema([
+                        Forms\Components\Textarea::make('product_specs')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('recording_link')
+                            ->required()
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('comments')
+                            ->required()
+                            ->columnSpanFull(),
                     ])
-                    ->required(),
-                Forms\Components\Select::make('insurance_id')
-                    ->relationship('insurance', 'insurance')
-                    ->required(),
-                Forms\Components\Select::make('products_id')
-                    ->relationship('products', 'products')
-                    ->required(),
-                Forms\Components\TextInput::make('patient_phone')
-                    ->tel()
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('secondary_phone')
-                    ->tel()
-                    ->maxLength(15)
-                    ->default(null),
-                Forms\Components\TextInput::make('first_name')
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('last_name')
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\DatePicker::make('dob')
-                    ->required(),
-                Forms\Components\TextInput::make('medicare_id')
-                    ->unique()
-                    ->validationMessages([
-                        'unique' => 'The Medicare Id is already present'
-                    ])
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\Textarea::make('address')
-                    ->required()
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('city')
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('state')
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('zip')
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\Textarea::make('product_specs')
-                    ->required()
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('doctor_name')
-                    ->required()
-                    ->maxLength(30),
-                Forms\Components\TextInput::make('patient_last_visit')
-                    ->required()
-                    ->maxLength(20),
-                Forms\Components\Textarea::make('doctor_address')
-                    ->columnSpanFull(),
-                Forms\Components\TextInput::make('doctor_phone')
-                    ->tel()
-                    ->required()
-                    ->maxLength(15),
-                Forms\Components\TextInput::make('doctor_fax')
-                    ->required()
-                    ->maxLength(20),
-                Forms\Components\TextInput::make('doctor_npi')
-                    ->required()
-                    ->maxLength(50),
-                Forms\Components\Textarea::make('recording_link')
-                    ->required()
-                    ->columnSpanFull(),
-                Forms\Components\Textarea::make('comments')
-                    ->required()
-                    ->columnSpanFull(),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        $user = Auth::user();
+        $isAdmin = $user->hasRole('admin');
+
+        return parent::getEloquentQuery()
+            ->select([
+                'id',
+                'status',
+                'user_id',
+                'insurance_id',
+                'products_id',
+                'patient_phone',
+                'first_name',
+                'last_name',
+                'created_at',
+                'dob',
+                'medicare_id',
+                'city',
+                'state',
+                'doctor_name',
+                'patient_last_visit'
+            ])
+            ->with(['user:id,name,team', 'insurance:id,name', 'products:id,name'])
+            ->where('status', 'Paid')
+            ->orderBy('id', 'desc')
+            ->when(request()->has('filters.team'), function (Builder $query) {
+                $query->whereHas('user', fn($q) => $q->where('team', request('filters.team')));
+            })
+            ->when(!$isAdmin && !$user->hasRole('hr'), function (Builder $query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->when($user->hasRole('manager'), function (Builder $q) use ($user) {
+                        $q->orWhereHas('user', fn($q) => $q->where('team', strtolower($user->name)));
+                    });
+            });
     }
 
     public static function table(Table $table): Table
     {
-        $user = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = Auth::user()->hasRole('admin');
+        $isHr = Auth::user()->hasRole('hr');
 
         return $table
-            ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
-                $query->where('status', 'Paid')
-                    ->orderBy('id', 'desc');
-
-                if (request()->has('filters.team')) {
-                    $query->whereHas('user', function ($q) {
-                        $q->where('team', request('filters.team'));
-                    });
-                }
-
-                // Restrict to user's leads if not admin
-                if (!$isAdmin && !$user->hasRole('hr')) {
-                    if ($user->hasRole('manager')) {
-                        // For managers, show all leads from their team
-                        $query->whereHas('user', function ($q) use ($user) {
-                            $q->where('team', strtolower($user->name)); // team = username (lowercase)
-                        });
-                    } else {
-                        // For regular agents, show only their own leads
-                        $query->where('user_id', $user->id);
-                    }
-                }
-            })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
-                    ->date()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Agent Name')
-                    ->formatStateUsing(function ($state) {
-                        return $state ? ucwords($state) : 'N/A';
-                    })
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin') || auth()->user()->hasRole('hr'))
+                    ->label('Date')
+                    ->dateTime('M d, Y h:i A')
                     ->sortable()
-                    ->searchable(
-                        query: fn(Builder $query, string $search) => $query->whereHas(
-                            'user',
-                            fn($q) => $q->where('name', 'like', "%{$search}%")
-                        )
-                    ),
-                $isAdmin
-                    ? Tables\Columns\SelectColumn::make('status')
+                    ->description(fn($record) => $record->created_at->diffForHumans())
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent')
+                    ->formatStateUsing(fn($state) => $state ? ucwords($state) : 'N/A')
+                    ->toggleable(isToggledHiddenByDefault: !($isAdmin || $isHr))
+                    ->sortable()
+                    ->searchable(),
+
+                $isAdmin ?
+                    Tables\Columns\SelectColumn::make('status')
                     ->options([
-                        'new' => 'new',
-                        'bad lead' => 'Bad lead',
+                        'new' => 'New',
+                        'payable' => 'Payable',
+                        'bad lead' => 'Bad Lead',
                         'returned' => 'Returned',
-                        'billable' => 'Billable',
                     ])
-                    ->default('new')
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->searchable()
-                    ->disabled(fn() => !$isAdmin)
                     : Tables\Columns\TextColumn::make('status')
-                    ->badge('status')
-                    ->default(fn($record) => ucwords($record->status))
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('insurance.name')
-                    ->numeric()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('products.name')
-                    ->numeric()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('patient_phone')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('secondary_phone')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('first_name')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('last_name')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('dob')
-                    ->copyable()
-                    ->date()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('medicare_id')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('city')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('state')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('zip')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_name')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('patient_last_visit')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_phone')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_fax')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_npi')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('calculated_amount')
-                    ->label('Amount (PKR)')
-                    ->getStateUsing(function (PaidLeads $record): string {
-                        return number_format(1000) . ' PKR'; // Each lead = 1000 PKR
+                    ->badge()
+                    ->color(fn($state) => match ($state instanceof \App\Enum\InputStatus ? $state->value : $state) {
+                        'bad lead' => 'danger',
+                        'paid' => 'success',
+                        default => 'primary'
                     })
-                    ->html()
-                    ->alignRight()
+                    ->formatStateUsing(function ($state) {
+                        // Handle both enum and string cases
+                        $status = $state instanceof \App\Enum\InputStatus ? $state->value : $state;
+                        return ucwords($status);
+                    })
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('insurance.name')
+                    ->label('Insurance')
+                    ->toggleable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('products.name')
+                    ->label('Product')
+                    ->toggleable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('first_name')
+                    ->toggleable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('last_name')
+                    ->toggleable()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('patient_phone')
+                    ->label('Phone')
+                    ->toggleable()
+                    ->searchable()
+                    ->copyable(),
+
+                Tables\Columns\TextColumn::make('dob')
+                    ->label('DOB')
+                    ->date()
+                    ->toggleable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('medicare_id')
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable()
+                    ->copyable(),
             ])
             ->filters([
                 SelectFilter::make('team')
                     ->relationship('user', 'team')
                     ->searchable()
                     ->preload()
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->visible(fn() => $isAdmin)
                     ->label('Team')
-                    ->options(function () {
-                        return User::select('team')
+                    ->options(
+                        fn() => User::select('team')
                             ->whereNotNull('team')
-                            ->whereRaw('UCWORDS(team) != ?', ['alpha'])
+                            ->whereRaw('LOWER(team) != ?', ['alpha'])
                             ->groupBy('team')
                             ->orderBy('team')
-                            ->get()
-                            ->pluck('team')
-                            ->reject(fn($team) => strtolower($team) === 'alpha') // Case-insensitive rejection
-                            ->mapWithKeys(fn($team) => [
-                                $team => ucwords(strtolower($team))
-                            ])
-                            ->toArray();
-                    })
+                            ->pluck('team', 'team')
+                            ->mapWithKeys(
+                                fn($team) => [
+                                    $team => ucwords(strtolower($team))
+                                ]
+                            )
+                    ),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->hidden(fn(User $user): bool => $user->isAgent())
-                    ->url(fn(PaidLeads $record): string => static::getUrl('edit', ['record' => $record]))
+                    ->hidden(fn() => Auth::user()->isAgent()),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn(): bool => $isAdmin),
+                        ->visible(fn() => $isAdmin),
+                    ExportBulkAction::make()
+                        ->visible(fn() => $isAdmin),
                 ]),
-                ExportBulkAction::make()
-                    ->visible(fn(): bool => $isAdmin),
-            ]);
+            ])
+            ->defaultSort('id', 'desc')
+            ->deferLoading()
+            ->persistFiltersInSession()
+            ->striped()
+            ->paginated([10, 25, 50, 100]);
     }
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
+
     public static function canCreate(): bool
     {
         return false;
     }
 
-    public static function canEdit(Model $record): bool
+    public static function canEdit($record): bool
     {
         return false;
     }
+
     public static function getPages(): array
     {
         return [
             'index' => Pages\ListPaidLeads::route('/'),
-            'create' => Pages\CreatePaidLeads::route('/create'),
-            'edit' => Pages\EditPaidLeads::route('/{record}/edit'),
         ];
     }
 

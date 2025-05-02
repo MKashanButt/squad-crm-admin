@@ -6,10 +6,11 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Lab404\Impersonate\Models\Impersonate;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, Impersonate;
 
     // Define the enum values (adjust according to your actual enum)
     public const ROLE_ADMIN = 'admin';
@@ -60,5 +61,16 @@ class User extends Authenticatable
     public function isAgent(): bool
     {
         return $this->hasRole(self::ROLE_AGENT);
+    }
+
+    public function canImpersonate(): bool
+    {
+        return $this->hasRole('admin');
+    }
+
+    public function canBeImpersonated(): bool
+    {
+        // Don't allow impersonating other admins
+        return !$this->hasRole('admin') && $this->id !== auth()->id();
     }
 }

@@ -11,178 +11,192 @@ use Filament\Tables;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class BadLeadsResource extends Resource
 {
     protected static ?string $model = BadLeads::class;
-
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+    protected static ?string $navigationIcon = 'heroicon-o-shield-exclamation';
     protected static ?int $navigationSort = 5;
+    protected static ?string $navigationGroup = 'Lead Management';
 
     public static function form(Form $form): Form
     {
-        return $form
-            ->schema([
-                //
-            ]);
+        return $form->schema([]); // Empty form for read-only resource
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()
+            ->select([
+                'id',
+                'status',
+                'user_id',
+                'insurance_id',
+                'products_id',
+                'patient_phone',
+                'first_name',
+                'last_name',
+                'created_at',
+                'city',
+                'state',
+                'medicare_id'
+            ])
+            ->with([
+                'user:id,name,team',
+                'insurance:id,name',
+                'products:id,name'
+            ])
+            ->where('status', 'bad lead')
+            ->orderBy('id', 'desc')
+            ->when(!auth()->user()->hasRole('admin'), function (Builder $query) {
+                $query->where('user_id', auth()->id())
+                    ->when(
+                        auth()->user()->hasRole('manager'),
+                        fn(Builder $q) => $q->orWhereHas(
+                            'user',
+                            fn(Builder $userQuery) => $userQuery->where(
+                                'team',
+                                strtolower(auth()->user()->name)
+                            )
+                        )
+                    );
+            });
     }
 
     public static function table(Table $table): Table
     {
-        $user = auth()->user();
-        $isAdmin = $user->hasRole('admin');
+        $isAdmin = auth()->user()->hasRole('admin');
 
         return $table
-            ->modifyQueryUsing(function (Builder $query) use ($user, $isAdmin) {
-                $query->where('status', 'bad lead')
-                    ->orderBy('id', 'desc');
-
-                if (request()->has('filters.team')) {
-                    $query->whereHas('user', function ($q) {
-                        $q->where('team', request('filters.team'));
-                    });
-                }
-
-                // Restrict to user's leads if not admin
-                if (!$isAdmin) {
-                    if ($user->hasRole('manager')) {
-                        // For managers, show all leads from their team
-                        $query->whereHas('user', function ($q) use ($user) {
-                            $q->where('team', strtolower($user->name)); // team = username (lowercase)
-                        });
-                    } else {
-                        // For regular agents, show only their own leads
-                        $query->where('user_id', $user->id);
-                    }
-                }
-            })
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
-                    ->date()
-                    ->copyable()
-                    ->sortable(),
-                Tables\Columns\TextColumn::make('user.name')
-                    ->label('Agent Name')
-                    ->formatStateUsing(function ($state) {
-                        return $state ? ucwords($state) : 'N/A';
-                    })
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
+                    ->label('Date')
+                    ->date('M d, Y')
                     ->sortable()
-                    ->searchable(
-                        query: fn(Builder $query, string $search) => $query->whereHas(
-                            'user',
-                            fn($q) => $q->where('name', 'like', "%{$search}%")
-                        )
-                    ),
-                $isAdmin
-                    ? Tables\Columns\SelectColumn::make('status')
+                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->description(fn($record) => $record->created_at->diffForHumans()),
+
+                Tables\Columns\TextColumn::make('user.name')
+                    ->label('Agent')
+                    ->formatStateUsing(fn($state) => $state ? ucwords($state) : 'N/A')
+                    ->toggleable(isToggledHiddenByDefault: !$isAdmin)
+                    ->sortable()
+                    ->searchable(),
+                $isAdmin ?
+                    Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'new' => 'New',
-                        'returned' => 'Returned',
-                        'billable' => 'Billable',
                         'paid' => 'Paid',
+                        'payable' => 'Payable',
+                        'returned' => 'Returned',
                     ])
-                    ->default('new')
-                    ->extraAttributes(['class' => 'width-full'])
-                    ->searchable()
-                    ->disabled(fn() => !$isAdmin)
-                    : Tables\Columns\TextColumn::make('status')
-                    ->badge('danger')
-                    ->default(fn($record) => ucwords($record->status))
-                    ->searchable(),
+                    :
+                    Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn($state) => match ($state) {
+                        'bad lead' => 'danger',
+                        default => 'gray'
+                    })
+                    ->formatStateUsing(fn($state) => ucwords($state))
+                    ->toggleable(isToggledHiddenByDefault: false),
+
                 Tables\Columns\TextColumn::make('insurance.name')
-                    ->numeric()
-                    ->copyable()
+                    ->label('Insurance')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('products.name')
-                    ->numeric()
-                    ->copyable()
+                    ->label('Product')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
+
                 Tables\Columns\TextColumn::make('patient_phone')
-                    ->copyable()
+                    ->label('Phone')
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('secondary_phone')
-                    ->copyable()
-                    ->searchable(),
+
                 Tables\Columns\TextColumn::make('first_name')
-                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('last_name')
-                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: false)
                     ->searchable(),
-                Tables\Columns\TextColumn::make('dob')
-                    ->copyable()
-                    ->date()
-                    ->sortable(),
+
                 Tables\Columns\TextColumn::make('medicare_id')
-                    ->copyable()
+                    ->label('Medicare ID')
+                    ->toggleable(isToggledHiddenByDefault: true)
                     ->searchable(),
+
                 Tables\Columns\TextColumn::make('city')
-                    ->copyable()
-                    ->searchable(),
+                    ->toggleable(isToggledHiddenByDefault: true),
+
                 Tables\Columns\TextColumn::make('state')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('zip')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_name')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('patient_last_visit')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_phone')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_fax')
-                    ->copyable()
-                    ->searchable(),
-                Tables\Columns\TextColumn::make('doctor_npi')
-                    ->copyable()
-                    ->searchable(),
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->sortable(),
             ])
             ->filters([
                 SelectFilter::make('team')
-                    ->relationship('user', 'team')
+                    ->label('Agent Team')
+                    ->options(
+                        Cache::remember('team_filter_options', 3600, function () {
+                            return User::query()
+                                ->select('team')
+                                ->whereNotNull('team')
+                                ->distinct()
+                                ->orderBy('team')
+                                ->pluck('team', 'team')
+                                ->mapWithKeys(fn($team) => [
+                                    $team => ucwords(strtolower($team))
+                                ]);
+                        })
+                    )
                     ->searchable()
                     ->preload()
-                    ->visible(fn(): bool => auth()->user()->hasRole('admin'))
-                    ->label('Team')
-                    ->options(function () {
-                        return User::select('team')
-                            ->whereNotNull('team')
-                            ->whereRaw('UCWORDS(team) != ?', ['alpha'])
-                            ->groupBy('team')
-                            ->orderBy('team')
-                            ->get()
-                            ->pluck('team')
-                            ->reject(fn($team) => strtolower($team) === 'alpha') // Case-insensitive rejection
-                            ->mapWithKeys(fn($team) => [
-                                $team => ucwords(strtolower($team))
-                            ])
-                            ->toArray();
-                    })
+                    ->visible(fn() => auth()->user()->hasRole('admin')),
             ])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->hidden(fn(User $user): bool => $user->isAgent())
-                    ->url(fn(BadLeads $record): string => static::getUrl('edit', ['record' => $record]))
+                    ->hidden(fn() => !auth()->user()->can('update', BadLeads::class))
+                    ->modalWidth('4xl'),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
                     Tables\Actions\DeleteBulkAction::make()
-                        ->visible(fn(): bool => $isAdmin),
-                ])
-            ]);
+                        ->authorize(fn(User $user) => $user->hasRole('admin'))
+                        ->action(function ($records) {
+                            DB::transaction(function () use ($records) {
+                                $records->chunk(500, function ($chunk) {
+                                    BadLeads::whereIn('id', $chunk->pluck('id'))->delete();
+                                });
+                            });
+                        })
+                        ->requiresConfirmation()
+                        ->modalHeading('Delete Selected Leads')
+                        ->modalDescription('Are you sure you want to delete these leads? This cannot be undone.')
+                        ->modalSubmitActionLabel('Yes, delete them'),
+                ])->label('Bulk Actions'),
+            ])
+            ->emptyStateActions([])
+            ->defaultSort('id', 'desc')
+            ->deferLoading()
+            ->persistFiltersInSession()
+            ->striped();
     }
 
     public static function getRelations(): array
     {
+        return [];
+    }
+
+    public static function getPages(): array
+    {
         return [
-            //
+            'index' => Pages\ListBadLeads::route('/'),
+            'edit' => Pages\EditBadLeads::route('/{record}/edit'),
         ];
     }
 
@@ -191,13 +205,8 @@ class BadLeadsResource extends Resource
         return false;
     }
 
-
-    public static function getPages(): array
+    public static function canEdit(Model $record): bool
     {
-        return [
-            'index' => Pages\ListBadLeads::route('/'),
-            'create' => Pages\CreateBadLeads::route('/create'),
-            'edit' => Pages\EditBadLeads::route('/{record}/edit'),
-        ];
+        return false;
     }
 }

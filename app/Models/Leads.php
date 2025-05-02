@@ -6,6 +6,7 @@ use App\Enum\InputStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Leads extends Model
 {
@@ -88,5 +89,21 @@ class Leads extends Model
                 abort(403, 'Only admins can delete leads');
             }
         });
+    }
+
+    // app/Models/User.php
+    public function leads(): HasMany
+    {
+        return $this->hasMany(Leads::class);
+    }
+
+    public function billedLeads(): HasMany
+    {
+        return $this->hasMany(Leads::class)->where('status', 'billable');
+    }
+
+    public function returnLeads(): HasMany
+    {
+        return $this->hasMany(Leads::class)->where('status', 'returned');
     }
 }
