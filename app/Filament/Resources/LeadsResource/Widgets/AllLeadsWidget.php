@@ -62,7 +62,7 @@ class AllLeadsWidget extends BaseWidget
         $billedLeadsCount = Leads::whereHas('user', function ($query) use ($teamName) {
             $query->where('team', $teamName);
         })
-            ->where('status', 'billed')
+            ->where('status', 'payable')
             ->count();
 
         $totalCommission = $billedLeadsCount * 500;
