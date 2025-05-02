@@ -37,13 +37,13 @@ class AllLeadsWidget extends BaseWidget
                 ->color('primary')
                 ->chart([7, 2, 10, 3, 15, 4, 17]),
 
-            Stat::make('Paid Leads', $paidLeadsCount)
-                ->description('Successfully paid')
+            Stat::make('Payable Leads', $paidLeadsCount)
+                ->description('All Payable Leads')
                 ->descriptionIcon('heroicon-o-check-badge')
                 ->color('success'),
 
             Stat::make('Total Amount', number_format($totalAmount) . ' PKR')
-                ->description('Value of paid leads (1000 PKR each)')
+                ->description('Value of Payable leads (1000 PKR each)')
                 ->descriptionIcon('heroicon-o-currency-rupee')
                 ->color('primary')
                 ->chart($this->getAmountTrendData()),
