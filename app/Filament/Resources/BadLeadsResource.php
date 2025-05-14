@@ -51,7 +51,7 @@ class BadLeadsResource extends Resource
             ])
             ->where('status', 'bad lead')
             ->orderBy('id', 'desc')
-            ->when(!auth()->user()->hasRole('admin'), function (Builder $query) {
+            ->when(!auth()->user()->hasRole('admin') && !auth()->user()->hasRole('hr'), function (Builder $query) {
                 $query->where('user_id', auth()->id())
                     ->when(
                         auth()->user()->hasRole('manager'),
@@ -138,26 +138,7 @@ class BadLeadsResource extends Resource
                     ->toggleable(isToggledHiddenByDefault: true)
                     ->sortable(),
             ])
-            ->filters([
-                SelectFilter::make('team')
-                    ->label('Agent Team')
-                    ->options(
-                        Cache::remember('team_filter_options', 3600, function () {
-                            return User::query()
-                                ->select('team')
-                                ->whereNotNull('team')
-                                ->distinct()
-                                ->orderBy('team')
-                                ->pluck('team', 'team')
-                                ->mapWithKeys(fn($team) => [
-                                    $team => ucwords(strtolower($team))
-                                ]);
-                        })
-                    )
-                    ->searchable()
-                    ->preload()
-                    ->visible(fn() => auth()->user()->hasRole('admin')),
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->hidden(fn() => !auth()->user()->can('update', BadLeads::class))

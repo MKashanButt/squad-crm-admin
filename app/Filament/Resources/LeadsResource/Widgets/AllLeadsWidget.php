@@ -22,6 +22,10 @@ class AllLeadsWidget extends BaseWidget
             return $this->getManagerStats($user);
         }
 
+        if ($user->hasRole('qa')) {
+            return $this->getQaStats($user);
+        }
+
         return $this->getAgentStats($user);
     }
 
@@ -49,7 +53,47 @@ class AllLeadsWidget extends BaseWidget
                 ->chart($this->getAmountTrendData()),
         ];
     }
+    protected function getQaStats(User $agent): array
+    {
+        $totalLeads = Leads::count();
+        $paidLeadsCount = Leads::where('status', 'payable')
+            ->count();
 
+        $returnLeadsCount = Leads::where('status', 'returned')
+            ->count();
+
+        $totalEarnings = ($paidLeadsCount * 500) - ($returnLeadsCount * 1000);
+        $totalReturnsDeduction = $returnLeadsCount * 1000;
+
+        return [
+            Stat::make('Your Leads', $totalLeads)
+                ->description('All leads assigned to you')
+                ->descriptionIcon('heroicon-o-user-circle')
+                ->color('primary')
+                ->chart($this->getAgentLeadsChartData($agent)),
+
+            Stat::make('Paid Leads', $paidLeadsCount)
+                ->description('Earned: ' . number_format($paidLeadsCount * 500) . ' PKR')
+                ->descriptionIcon('heroicon-o-banknotes')
+                ->color('success'),
+
+            Stat::make('Returns', $returnLeadsCount)
+                ->description('Deducted: -' . number_format($totalReturnsDeduction) . ' PKR')
+                ->descriptionIcon('heroicon-o-arrow-uturn-left')
+                ->color('danger'),
+
+            Stat::make('Your Earnings', number_format($totalEarnings) . ' PKR')
+                ->description('Net commission after returns')
+                ->descriptionIcon('heroicon-o-currency-rupee')
+                ->color($totalEarnings >= 0 ? 'primary' : 'danger')
+                ->chart($this->getAgentEarningsChartData($agent)),
+
+            Stat::make('Conversion Rate', $this->getConversionRate($agent))
+                ->description('Your lead to paid conversion')
+                ->descriptionIcon('heroicon-o-arrow-trending-up')
+                ->color('info'),
+        ];
+    }
     protected function getManagerStats(User $manager): array
     {
         $teamName = strtolower($manager->name);

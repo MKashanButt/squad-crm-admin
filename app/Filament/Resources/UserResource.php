@@ -53,6 +53,7 @@ class UserResource extends Resource
                             ->options([
                                 'admin' => 'Admin',
                                 'hr' => 'HR',
+                                'qa' => 'QA',
                                 'manager' => 'Manager',
                                 'agent' => 'Agent',
                             ])
@@ -160,6 +161,7 @@ class UserResource extends Resource
                         'hr' => 'HR',
                         'manager' => 'Manager',
                         'agent' => 'Agent',
+                        'qa' => 'QA',
                     ]),
 
                 Tables\Filters\Filter::make('has_leads')

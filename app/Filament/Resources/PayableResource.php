@@ -61,7 +61,7 @@ class PayableResource extends Resource
             ->when(request()->has('filters.team'), function (Builder $query) {
                 $query->whereHas('user', fn($q) => $q->where('team', request('filters.team')));
             })
-            ->when(!$isAdmin && !$user->hasRole('hr'), function (Builder $query) use ($user) {
+            ->when(!$isAdmin && !$user->hasRole('hr') && !$user->hasRole('qa'), function (Builder $query) use ($user) {
                 $query->where('user_id', $user->id)
                     ->when($user->hasRole('manager'), function (Builder $q) use ($user) {
                         $q->orWhereHas('user', fn($q) => $q->where('team', strtolower($user->name)));
@@ -160,25 +160,7 @@ class PayableResource extends Resource
                     ->label('Last Visit')
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->filters([
-                SelectFilter::make('team')
-                    ->relationship('user', 'team')
-                    ->searchable()
-                    ->preload()
-                    ->visible(fn(): bool => $isAdmin)
-                    ->label('Team')
-                    ->options(
-                        fn() => User::select('team')
-                            ->whereNotNull('team')
-                            ->whereRaw('LOWER(team) != ?', ['alpha'])
-                            ->groupBy('team')
-                            ->orderBy('team')
-                            ->pluck('team', 'team')
-                            ->mapWithKeys(fn($team) => [
-                                $team => ucwords(strtolower($team))
-                            ])
-                    )
-            ])
+            ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make()
                     ->visible(fn() => $isAdmin),
