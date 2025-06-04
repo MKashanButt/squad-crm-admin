@@ -139,7 +139,7 @@ class AllLeadsWidget extends BaseWidget
     {
         $totalLeads = Leads::where('user_id', $agent->id)->count();
         $paidLeadsCount = Leads::where('user_id', $agent->id)
-            ->where('status', 'billable')
+            ->where('status', 'payable')
             ->count();
 
         $returnLeadsCount = Leads::where('user_id', $agent->id)
