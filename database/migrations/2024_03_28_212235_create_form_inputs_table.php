@@ -32,7 +32,7 @@ return new class extends Migration {
             $table->string('doctor_npi', 50);
             $table->text('recording_link');
             $table->text('comments');
-            $table->string('status', 10)->nullable();
+            $table->string('status', 15)->nullable();
             $table->foreignId('insurance_id');
             $table->foreignId('products_id');
             $table->foreignId('user_id');
