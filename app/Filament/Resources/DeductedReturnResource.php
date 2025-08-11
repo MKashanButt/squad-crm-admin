@@ -33,7 +33,7 @@ class DeductedReturnResource extends Resource
 
         return $table
             ->query(
-                DeductedReturn::query()->where('status', 'deducted return')
+                DeductedReturn::query()->where('status', 'deducted returns')
             )
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
