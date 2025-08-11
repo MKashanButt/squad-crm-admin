@@ -15,7 +15,7 @@ class DeductedReturnResource extends Resource
 {
     protected static ?string $model = DeductedReturn::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?string $navigationIcon = 'heroicon-o-minus-circle';
     protected static ?int $navigationSort = 6;
     protected static ?string $navigationGroup = 'Lead Management';
 
@@ -32,6 +32,9 @@ class DeductedReturnResource extends Resource
         $isAdmin = auth()->user()->hasRole('admin');
 
         return $table
+            ->query(
+                DeductedReturn::query()->where('status', 'deducted return')
+            )
             ->columns([
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date')
