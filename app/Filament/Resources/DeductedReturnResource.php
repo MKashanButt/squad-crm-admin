@@ -2,68 +2,29 @@
 
 namespace App\Filament\Resources;
 
-use App\Filament\Resources\BadLeadsResource\Pages;
-use App\Models\BadLeads;
+use App\Filament\Resources\DeductedReturnResource\Pages;
+use App\Models\DeductedReturn;
 use App\Models\User;
+use DB;
 use Filament\Forms\Form;
 use Filament\Resources\Resource;
 use Filament\Tables;
-use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 
-class BadLeadsResource extends Resource
+class DeductedReturnResource extends Resource
 {
-    protected static ?string $model = BadLeads::class;
-    protected static ?string $navigationIcon = 'heroicon-o-shield-exclamation';
-    protected static ?int $navigationSort = 5;
+    protected static ?string $model = DeductedReturn::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static ?int $navigationSort = 6;
     protected static ?string $navigationGroup = 'Lead Management';
 
     public static function form(Form $form): Form
     {
-        return $form->schema([]); // Empty form for read-only resource
-    }
-
-    public static function getEloquentQuery(): Builder
-    {
-        return parent::getEloquentQuery()
-            ->select([
-                'id',
-                'status',
-                'user_id',
-                'insurance_id',
-                'products_id',
-                'patient_phone',
-                'first_name',
-                'last_name',
-                'created_at',
-                'city',
-                'state',
-                'medicare_id'
-            ])
-            ->with([
-                'user:id,name,team',
-                'insurance:id,name',
-                'products:id,name'
-            ])
-            ->where('status', 'bad lead')
-            ->orderBy('id', 'desc')
-            ->when(!auth()->user()->hasRole('admin') && !auth()->user()->hasRole('hr'), function (Builder $query) {
-                $query->where('user_id', auth()->id())
-                    ->when(
-                        auth()->user()->hasRole('manager'),
-                        fn(Builder $q) => $q->orWhereHas(
-                            'user',
-                            fn(Builder $userQuery) => $userQuery->where(
-                                'team',
-                                strtolower(auth()->user()->name)
-                            )
-                        )
-                    );
-            });
+        return $form
+            ->schema([
+                //
+            ]);
     }
 
     public static function table(Table $table): Table
@@ -92,7 +53,6 @@ class BadLeadsResource extends Resource
                         'paid' => 'Paid',
                         'payable' => 'Payable',
                         'returned' => 'Returned',
-                        'deducted returns' => 'Deducted Returns'
                     ])
                 :
                 Tables\Columns\TextColumn::make('status')
@@ -142,7 +102,7 @@ class BadLeadsResource extends Resource
             ->filters([])
             ->actions([
                 Tables\Actions\EditAction::make()
-                    ->hidden(fn() => !auth()->user()->can('update', BadLeads::class))
+                    ->hidden(fn() => !auth()->user()->can('update', DeductedReturn::class))
                     ->modalWidth('4xl'),
             ])
             ->bulkActions([
@@ -152,7 +112,7 @@ class BadLeadsResource extends Resource
                         ->action(function ($records) {
                             DB::transaction(function () use ($records) {
                                 $records->chunk(500, function ($chunk) {
-                                    BadLeads::whereIn('id', $chunk->pluck('id'))->delete();
+                                    DeductedReturn::whereIn('id', $chunk->pluck('id'))->delete();
                                 });
                             });
                         })
@@ -171,24 +131,17 @@ class BadLeadsResource extends Resource
 
     public static function getRelations(): array
     {
-        return [];
+        return [
+            //
+        ];
     }
 
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListBadLeads::route('/'),
-            'edit' => Pages\EditBadLeads::route('/{record}/edit'),
+            'index' => Pages\ListDeductedReturns::route('/'),
+            'create' => Pages\CreateDeductedReturn::route('/create'),
+            'edit' => Pages\EditDeductedReturn::route('/{record}/edit'),
         ];
-    }
-
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return false;
     }
 }

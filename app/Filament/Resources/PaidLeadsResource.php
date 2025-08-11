@@ -203,14 +203,15 @@ class PaidLeadsResource extends Resource
                     ->searchable(),
 
                 $isAdmin ?
-                    Tables\Columns\SelectColumn::make('status')
+                Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'new' => 'New',
                         'payable' => 'Payable',
                         'bad lead' => 'Bad Lead',
                         'returned' => 'Returned',
+                        'deducted returns' => 'Deducted Returns'
                     ])
-                    : Tables\Columns\TextColumn::make('status')
+                : Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn($state) => match ($state instanceof \App\Enum\InputStatus ? $state->value : $state) {
                         'bad lead' => 'danger',

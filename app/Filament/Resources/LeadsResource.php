@@ -215,14 +215,15 @@ class LeadsResource extends Resource
                     ->sortable()
                     ->searchable(),
                 $isAdmin ?
-                    Tables\Columns\SelectColumn::make('status')
+                Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'paid' => 'Paid',
                         'payable' => 'Payable',
                         'bad lead' => 'Bad Lead',
                         'returned' => 'Returned',
+                        'deducted returns' => 'Deducted Returns'
                     ])
-                    : Tables\Columns\TextColumn::make('status')
+                : Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn($state) => match ($state) {
                         'new' => 'primary',

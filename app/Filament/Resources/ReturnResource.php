@@ -86,15 +86,16 @@ class ReturnResource extends Resource
                     ->searchable(),
 
                 $isAdmin ?
-                    Tables\Columns\SelectColumn::make('status')
+                Tables\Columns\SelectColumn::make('status')
                     ->options([
                         'new' => 'New',
                         'paid' => 'Paid',
                         'payable' => 'Payable',
                         'bad lead' => 'Bad Lead',
+                        'deducted returns' => 'Deducted Returns'
                     ])
-                    :
-                    Tables\Columns\TextColumn::make('status')
+                :
+                Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color('danger') // Red for returned leads
                     ->formatStateUsing(fn($state) => ucwords($state))
