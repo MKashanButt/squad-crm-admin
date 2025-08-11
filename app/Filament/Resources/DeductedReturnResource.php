@@ -56,6 +56,7 @@ class DeductedReturnResource extends Resource
                         'paid' => 'Paid',
                         'payable' => 'Payable',
                         'returned' => 'Returned',
+                        'bad leads' => 'Bad Lead'
                     ])
                 :
                 Tables\Columns\TextColumn::make('status')
